@@ -657,6 +657,12 @@
       <label for="assignTireQty">Quantity</label>
       <input type="number" id="assignTireQty" min="1" placeholder="4">
 
+      <label>Assign to</label>
+      <div class="truck-toggle" id="assignToToggle">
+        <div class="truck-btn selected" data-assignto="Technician">Technician</div>
+        <div class="truck-btn" data-assignto="Owner">Myself (Owner)</div>
+      </div>
+
       <label for="assignNotes">Notes for technician</label>
       <textarea id="assignNotes" placeholder="Optional"></textarea>
 
@@ -999,11 +1005,21 @@ document.querySelectorAll('.tab').forEach(tab=>{
 
 /* Truck toggle */
 let selectedTruck = '';
-document.querySelectorAll('.truck-btn').forEach(btn=>{
+document.querySelectorAll('.truck-toggle .truck-btn').forEach(btn=>{
   btn.addEventListener('click', ()=>{
-    document.querySelectorAll('.truck-btn').forEach(b=>b.classList.remove('selected'));
+    document.querySelectorAll('.truck-toggle .truck-btn').forEach(b=>b.classList.remove('selected'));
     btn.classList.add('selected');
     selectedTruck = btn.dataset.truck;
+  });
+});
+
+/* Assign-to toggle */
+let selectedAssignTo = 'Technician';
+document.querySelectorAll('#assignToToggle .truck-btn').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('#assignToToggle .truck-btn').forEach(b=>b.classList.remove('selected'));
+    btn.classList.add('selected');
+    selectedAssignTo = btn.dataset.assignto;
   });
 });
 
@@ -1107,7 +1123,7 @@ function resetForm(){
    'tireBrand','priceCharged','mileageStart','mileageEnd','jobLocation','jobNotes']
     .forEach(id => document.getElementById(id).value = '');
   setVehicleFields('vehMake','vehModel','makeCustomWrap','modelSelectWrap','makeCustom','modelCustomWrap','modelCustom','','');
-  document.querySelectorAll('.truck-btn').forEach(b=>b.classList.remove('selected'));
+  document.querySelectorAll('.truck-toggle .truck-btn').forEach(b=>b.classList.remove('selected'));
   selectedTruck = '';
   document.getElementById('milesDisplay').innerHTML = '';
   setDefaultDate();
@@ -1329,7 +1345,8 @@ async function loadMyJobs(){
   try{
     const res = await fetch(`${APPS_SCRIPT_URL}?action=listJobs&status=Assigned`);
     const data = await res.json();
-    renderMyJobs(data.jobs || []);
+    const jobs = (data.jobs || []).filter(j => !j.AssignedTo || j.AssignedTo === 'Technician');
+    renderMyJobs(jobs);
   }catch(err){
     list.innerHTML = '<div class="empty-state">Could not load jobs. Check your connection and try Refresh.</div>';
   }
@@ -1405,6 +1422,11 @@ document.getElementById('assignJobBtn').addEventListener('click', async ()=>{
     errBox.classList.add('show');
     return;
   }
+  if(APPS_SCRIPT_URL.includes('PASTE_YOUR_APPS_SCRIPT_URL_HERE')){
+    errBox.textContent = 'This app isn\'t connected to a Google Sheet yet — the Apps Script URL still needs to be set.';
+    errBox.classList.add('show');
+    return;
+  }
   errBox.classList.remove('show');
 
   const payload = {
@@ -1416,19 +1438,27 @@ document.getElementById('assignJobBtn').addEventListener('click', async ()=>{
     tireSize,
     tireQty: document.getElementById('assignTireQty').value.trim(),
     tireBrand: document.getElementById('assignTireBrand').value.trim(),
-    notes: document.getElementById('assignNotes').value.trim()
+    notes: document.getElementById('assignNotes').value.trim(),
+    assignedTo: selectedAssignTo
   };
 
   try{
-    await fetch(APPS_SCRIPT_URL, {
+    const res = await fetch(APPS_SCRIPT_URL, {
       method:'POST',
       headers:{'Content-Type':'text/plain;charset=utf-8'},
       body: JSON.stringify(payload)
     });
+    if(!res.ok) throw new Error('Server responded with an error');
+    const result = await res.json();
+    if(result.error) throw new Error(result.error);
     showToast('Job assigned');
     ['assignAddress','assignVehYear','assignTireWidth','assignTireAspect','assignTireRim','assignTireQty','assignTireBrand','assignNotes']
       .forEach(id => document.getElementById(id).value = '');
     setVehicleFields('assignVehMake','assignVehModel','assignMakeCustomWrap','assignModelSelectWrap','assignMakeCustom','assignModelCustomWrap','assignModelCustom','','');
+    document.querySelectorAll('#assignToToggle .truck-btn').forEach(b=>{
+      b.classList.toggle('selected', b.dataset.assignto === 'Technician');
+    });
+    selectedAssignTo = 'Technician';
   }catch(err){
     errBox.textContent = 'Could not reach the server. Check your connection and try again.';
     errBox.classList.add('show');
@@ -1450,7 +1480,9 @@ async function loadAllJobs(){
       <div class="job-card ${j.Status === 'Completed' ? 'completed' : ''}">
         <div class="job-addr">${escapeHtml(j.Address || 'No address given')}</div>
         <div class="job-detail">${escapeHtml([j.TireQty ? j.TireQty+'x' : '', j.TireSize, j.TireBrand].filter(Boolean).join(' '))}</div>
+        <div class="job-detail">Assigned to: ${escapeHtml(j.AssignedTo || 'Technician')}</div>
         <div class="job-status" style="color:${j.Status === 'Completed' ? 'var(--success)' : 'var(--gold)'}">${escapeHtml(j.Status || '')}</div>
+        ${(j.Status === 'Assigned' && j.AssignedTo === 'Owner') ? `<button class="start-job-btn" onclick='startJob(${JSON.stringify(j).replace(/'/g,"&#39;")})'>Start This Job</button>` : ''}
       </div>
     `).join('');
   }catch(err){
