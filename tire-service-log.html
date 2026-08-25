@@ -145,6 +145,29 @@
     color:#fff;
     border-color:var(--navy);
   }
+  .pill-group{
+    display:flex;
+    flex-wrap:wrap;
+    gap:6px;
+    margin-top:4px;
+  }
+  .pill-btn{
+    padding:8px 12px;
+    border:1px solid var(--border);
+    border-radius:16px;
+    background:#fff;
+    text-align:center;
+    font-weight:600;
+    font-size:0.78rem;
+    cursor:pointer;
+    color:var(--muted);
+    white-space:nowrap;
+  }
+  .pill-btn.selected{
+    background:var(--navy);
+    color:#fff;
+    border-color:var(--navy);
+  }
   .miles-display{
     font-size:0.8rem;
     color:var(--muted);
@@ -163,13 +186,14 @@
     cursor:pointer;
     margin-top:16px;
   }
-  .btn-primary{background:var(--gold); color:var(--navy-dark);}
+  .btn-primary{background:var(--gold); color:#FFFFFF;}
   .btn-primary:active{opacity:0.85;}
   .btn-secondary{
     background:transparent;
     border:1px solid var(--border);
     color:var(--muted);
   }
+  .btn-assign{background:var(--navy); color:#fff;}
   .error-box{
     background:#FBEAEF;
     color:var(--error);
@@ -258,11 +282,22 @@
   }
   .ticket-actions .edit-btn{color:var(--navy);}
   .ticket-actions .delete-btn{color:var(--error); border-color:#F2C6D3;}
+  .payment-badge{
+    display:inline-block;
+    font-size:0.72rem;
+    font-weight:700;
+    padding:2px 8px;
+    border-radius:10px;
+    margin-top:6px;
+  }
+  .payment-badge.paid{background:#E4F2E8; color:var(--success);}
+  .payment-badge.unpaid{background:#FBEAEF; color:var(--error);}
+  .payment-badge.invoiced{background:#FDF3E0; color:var(--gold);}
 
   /* Summary */
   .summary-grid{
     display:grid;
-    grid-template-columns:1fr 1fr;
+    grid-template-columns:1fr 1fr 1fr;
     gap:10px;
     margin-bottom:14px;
   }
@@ -270,16 +305,16 @@
     background:var(--card);
     border:1px solid var(--border);
     border-radius:var(--radius);
-    padding:14px;
+    padding:14px 8px;
     text-align:center;
   }
   .stat .num{
-    font-size:1.5rem;
+    font-size:1.3rem;
     font-weight:700;
     color:var(--navy);
   }
   .stat .lbl{
-    font-size:0.75rem;
+    font-size:0.7rem;
     color:var(--muted);
     margin-top:2px;
   }
@@ -383,16 +418,23 @@
   }
   #pinError.show{display:block;}
   #appWrapper.hidden{display:none;}
+  .hidden{display:none !important;}
 
   .role-owner, .role-tech{display:none;}
   body.role-is-owner .role-owner{display:flex;}
-  body.role-is-owner .tab.role-owner{display:flex;}
+  body.role-is-owner .tab.role-owner{display:flex; align-items:center; justify-content:center;}
   body.role-is-tech .role-tech{display:flex;}
-  body.role-is-tech .tab.role-tech{display:flex;}
+  body.role-is-tech .tab.role-tech{display:flex; align-items:center; justify-content:center;}
   body.role-is-owner .view.role-owner{display:none;}
   body.role-is-owner .view.role-owner.active{display:block;}
   body.role-is-tech .view.role-tech{display:none;}
   body.role-is-tech .view.role-tech.active{display:block;}
+
+  #ownerAssignSection{display:none;}
+  body.role-is-owner #ownerAssignSection{display:block;}
+
+  .cost-field-wrap{display:none;}
+  body.role-is-owner .cost-field-wrap{display:block;}
 
   .logout-link{
     position:absolute;
@@ -442,6 +484,73 @@
   }
   .import-export-row .btn{margin-top:0;}
   #importJsonInput{display:none;}
+
+  /* Tire line cards */
+  .tire-line-card{
+    border:1px solid var(--border);
+    border-radius:8px;
+    padding:12px;
+    margin-bottom:10px;
+    background:#FAF9F6;
+  }
+  .tire-line-card .tire-line-header{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-bottom:4px;
+  }
+  .tire-line-card .tire-line-title{
+    font-size:0.82rem;
+    font-weight:700;
+    color:var(--navy);
+  }
+  .remove-line-btn{
+    background:none;
+    border:none;
+    color:var(--error);
+    font-size:0.78rem;
+    font-weight:600;
+    cursor:pointer;
+    padding:2px 6px;
+  }
+  .size-caption{
+    display:flex;
+    gap:10px;
+    font-size:0.68rem;
+    color:var(--muted);
+    margin-top:2px;
+  }
+  .size-caption span{flex:1;}
+  .add-line-btn{
+    width:100%;
+    padding:10px;
+    border:1px dashed var(--navy);
+    border-radius:8px;
+    background:transparent;
+    color:var(--navy);
+    font-weight:600;
+    font-size:0.88rem;
+    cursor:pointer;
+    margin-top:4px;
+    margin-bottom:14px;
+  }
+  .payment-check-row{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    margin-top:14px;
+  }
+  .payment-check-row input[type="checkbox"]{
+    width:auto;
+    height:18px;
+    width:18px;
+  }
+  .payment-check-row label{
+    margin:0;
+    font-size:0.9rem;
+    color:var(--text);
+    font-weight:600;
+  }
 </style>
 </head>
 <body>
@@ -465,22 +574,22 @@
 </header>
 
 <div class="tabs">
-  <div class="tab role-tech" data-tab="myjobs">My Jobs</div>
-  <div class="tab active" data-tab="log">Log</div>
+  <div class="tab role-tech" data-tab="assigned">Assigned</div>
+  <div class="tab role-owner" data-tab="assigned">Assigned</div>
   <div class="tab" data-tab="new">New Job</div>
-  <div class="tab role-owner" data-tab="assign">Assign Job</div>
+  <div class="tab active" data-tab="log">Log</div>
   <div class="tab" data-tab="summary">Summary</div>
 </div>
 
 <main>
 
-  <!-- MY JOBS VIEW (technician) -->
-  <div class="view role-tech" id="view-myjobs">
+  <!-- ASSIGNED VIEW (both roles, filtered differently) -->
+  <div class="view" id="view-assigned">
     <div class="card" style="display:flex; justify-content:space-between; align-items:center;">
       <h2 style="margin:0;">Assigned jobs</h2>
-      <button class="btn btn-secondary" style="width:auto; margin:0; padding:8px 14px;" id="refreshJobsBtn">Refresh</button>
+      <button class="btn btn-secondary" style="width:auto; margin:0; padding:8px 14px;" id="refreshAssignedBtn">Refresh</button>
     </div>
-    <div id="myJobsList"><div class="empty-state">Loading...</div></div>
+    <div id="assignedList"><div class="empty-state">Loading...</div></div>
   </div>
 
   <!-- LOG VIEW -->
@@ -488,7 +597,7 @@
     <div id="logList"></div>
   </div>
 
-  <!-- NEW JOB VIEW -->
+  <!-- NEW JOB VIEW (shared by both roles) -->
   <div class="view" id="view-new">
     <div class="card">
       <h2>Log a Job</h2>
@@ -496,56 +605,83 @@
       <label for="jobDate">Date</label>
       <input type="date" id="jobDate">
 
-      <label for="customerName">Customer name</label>
-      <input type="text" id="customerName" placeholder="Optional">
-
-      <label for="customerPhone">Customer phone</label>
-      <input type="tel" id="customerPhone" placeholder="Optional">
-
-      <div class="row3">
-        <div>
-          <label for="vehYear">Year</label>
-          <input type="text" id="vehYear" placeholder="2021" inputmode="numeric">
-        </div>
-        <div>
-          <label for="vehMake">Make</label>
-          <input type="text" id="vehMake" placeholder="Toyota">
-        </div>
-        <div>
-          <label for="vehModel">Model</label>
-          <input type="text" id="vehModel" placeholder="Camry">
-        </div>
-      </div>
-
-      <label>Tire size</label>
-      <div class="row3">
-        <div>
-          <input type="number" id="tireWidth" placeholder="275" inputmode="numeric">
-        </div>
-        <div>
-          <input type="number" id="tireAspect" placeholder="70" inputmode="numeric">
-        </div>
-        <div>
-          <input type="number" id="tireRim" placeholder="18" inputmode="numeric">
-        </div>
-      </div>
-      <div style="display:flex; gap:10px; font-size:0.72rem; color:var(--muted); margin-top:2px;">
-        <span style="flex:1;">Width</span>
-        <span style="flex:1;">Aspect ratio</span>
-        <span style="flex:1;">Rim (in)</span>
-      </div>
-
-      <label for="tireQty">Quantity</label>
-      <input type="number" id="tireQty" min="1" placeholder="4">
-      <input type="text" id="tireBrand" placeholder="Optional">
-
-      <label for="priceCharged">Price charged ($)</label>
-      <input type="number" id="priceCharged" step="0.01" min="0" placeholder="0.00">
+      <label>Job type</label>
+      <div id="jobTypeRowsContainer"></div>
+      <button type="button" class="add-line-btn" id="addJobTypeRowBtn">+ Add another job type</button>
 
       <label>Truck used</label>
       <div class="truck-toggle">
         <div class="truck-btn" data-truck="Truck 1">Truck 1</div>
         <div class="truck-btn" data-truck="Truck 2">Truck 2</div>
+        <div class="truck-btn" data-truck="Truck 3">Truck 3</div>
+      </div>
+
+      <label for="customerName">Customer name</label>
+      <input type="text" id="customerName" placeholder="Optional">
+
+      <div class="row2">
+        <div>
+          <label for="customerPhone">Customer phone</label>
+          <input type="tel" id="customerPhone" placeholder="Optional">
+        </div>
+        <div>
+          <label for="customerEmail">Customer email</label>
+          <input type="email" id="customerEmail" placeholder="Optional">
+        </div>
+      </div>
+
+      <label for="jobLocation">Job location / address</label>
+      <input type="text" id="jobLocation" placeholder="Optional — address or area">
+
+      <div class="row2">
+        <div>
+          <label for="vehYear">Year</label>
+          <input type="number" id="vehYear" placeholder="2021" inputmode="numeric">
+        </div>
+        <div>
+          <label for="vehMake">Make</label>
+          <select id="vehMake" onchange="handleMakeChange('vehMake','vehModel','makeCustomWrap','modelSelectWrap','makeCustom')">
+            <option value="">Select make…</option>
+            <option value="__custom">Other…</option>
+          </select>
+        </div>
+      </div>
+      <div class="hidden" id="makeCustomWrap" style="margin-top:8px;">
+        <label for="makeCustom">Custom make</label>
+        <input id="makeCustom" placeholder="Make name">
+      </div>
+
+      <div id="modelSelectWrap">
+        <label for="vehModel">Model</label>
+        <select id="vehModel" disabled onchange="handleModelChange('vehModel','modelCustomWrap','modelCustom')">
+          <option value="">Select make first…</option>
+        </select>
+      </div>
+      <div class="hidden" id="modelCustomWrap" style="margin-top:8px;">
+        <label for="modelCustom">Custom model</label>
+        <input id="modelCustom" placeholder="Model name">
+      </div>
+
+      <label style="margin-top:16px;">Tires</label>
+      <div id="tireLinesContainer"></div>
+      <button type="button" class="add-line-btn" id="addTireLineBtn">+ Add another tire size</button>
+
+      <label for="paymentStatus" style="margin-top:16px;">Payment status</label>
+      <select id="paymentStatus">
+        <option value="Unpaid">Unpaid</option>
+        <option value="Paid">Paid</option>
+        <option value="Invoiced">Invoiced (billed, not yet paid)</option>
+      </select>
+      <div class="hidden" id="paymentMethodWrap" style="margin-top:8px;">
+        <label for="paymentMethod">Payment method</label>
+        <select id="paymentMethod">
+          <option value="">Select method…</option>
+          <option>Cash</option>
+          <option>Card</option>
+          <option>Zelle</option>
+          <option>Cash App</option>
+          <option>Other</option>
+        </select>
       </div>
 
       <div class="row2">
@@ -560,9 +696,6 @@
       </div>
       <div class="miles-display" id="milesDisplay"></div>
 
-      <label for="jobLocation">Job location</label>
-      <input type="text" id="jobLocation" placeholder="Optional — address or area">
-
       <label for="jobNotes">Notes</label>
       <textarea id="jobNotes" placeholder="Optional"></textarea>
 
@@ -570,66 +703,40 @@
 
       <button class="btn btn-primary" id="saveJobBtn">Save Job</button>
       <button class="btn btn-secondary" id="cancelEditBtn" style="display:none;">Cancel Edit</button>
-    </div>
-  </div>
 
-  <!-- ASSIGN JOB VIEW (owner) -->
-  <div class="view role-owner" id="view-assign">
-    <div class="card">
-      <h2>Assign a Job</h2>
+      <div class="role-owner" id="ownerAssignSection" style="margin-top:22px; border-top:1px solid var(--border); padding-top:16px;">
+        <h2 style="margin:0 0 10px;">Schedule / Assign</h2>
 
-      <label for="assignAddress">Address / location</label>
-      <input type="text" id="assignAddress" placeholder="123 Oak St, Apopka FL">
+        <div class="row2">
+          <div>
+            <label for="orderTakenDate">Date order was taken</label>
+            <input type="date" id="orderTakenDate">
+          </div>
+          <div>
+            <label for="neededDate" style="color:var(--gold); font-weight:800;">Date job is needed for</label>
+            <input type="date" id="neededDate" style="border-color:var(--gold); border-width:2px;">
+          </div>
+        </div>
 
-      <div class="row3">
-        <div>
-          <label for="assignVehYear">Year</label>
-          <input type="text" id="assignVehYear" placeholder="Optional">
+        <label for="tireStatus">Tire status</label>
+        <select id="tireStatus">
+          <option value="In Stock">In Stock</option>
+          <option value="Ordered">Ordered</option>
+          <option value="Received">Received</option>
+        </select>
+        <div class="hidden" id="dateOrderedWrap" style="margin-top:8px;">
+          <label for="dateOrdered">Date ordered</label>
+          <input type="date" id="dateOrdered">
         </div>
-        <div>
-          <label for="assignVehMake">Make</label>
-          <input type="text" id="assignVehMake" placeholder="Optional">
+
+        <label style="margin-top:16px;">Assign to</label>
+        <div class="truck-toggle" id="assignToToggle">
+          <div class="truck-btn selected" data-assignto="Technician">Technician</div>
+          <div class="truck-btn" data-assignto="Owner">Myself (Owner)</div>
         </div>
-        <div>
-          <label for="assignVehModel">Model</label>
-          <input type="text" id="assignVehModel" placeholder="Optional">
-        </div>
+        <button class="btn btn-assign" id="assignJobBtn">Assign Job (not done yet)</button>
+        <div class="error-box" id="assignErrorMsg"></div>
       </div>
-
-      <label>Tire size</label>
-      <div class="row3">
-        <div>
-          <input type="number" id="assignTireWidth" placeholder="275" inputmode="numeric">
-        </div>
-        <div>
-          <input type="number" id="assignTireAspect" placeholder="70" inputmode="numeric">
-        </div>
-        <div>
-          <input type="number" id="assignTireRim" placeholder="18" inputmode="numeric">
-        </div>
-      </div>
-      <div style="display:flex; gap:10px; font-size:0.72rem; color:var(--muted); margin-top:2px;">
-        <span style="flex:1;">Width</span>
-        <span style="flex:1;">Aspect ratio</span>
-        <span style="flex:1;">Rim (in)</span>
-      </div>
-
-      <label for="assignTireQty">Quantity</label>
-      <input type="number" id="assignTireQty" min="1" placeholder="4">
-      <input type="text" id="assignTireBrand" placeholder="Optional">
-
-      <label for="assignNotes">Notes for technician</label>
-      <textarea id="assignNotes" placeholder="Optional"></textarea>
-
-      <div class="error-box" id="assignErrorMsg"></div>
-
-      <button class="btn btn-primary" id="assignJobBtn">Assign Job</button>
-    </div>
-
-    <div class="card">
-      <h2>Job status</h2>
-      <button class="btn btn-secondary" style="margin-top:0;" id="refreshAllJobsBtn">Refresh</button>
-      <div id="allJobsList" style="margin-top:12px;"><div class="empty-state">Tap Refresh to load jobs.</div></div>
     </div>
   </div>
 
@@ -642,9 +749,10 @@
         <option value="week">This week</option>
       </select>
       <select id="summaryTruck">
-        <option value="all">Both trucks</option>
+        <option value="all">All trucks</option>
         <option value="Truck 1">Truck 1</option>
         <option value="Truck 2">Truck 2</option>
+        <option value="Truck 3">Truck 3</option>
       </select>
     </div>
 
@@ -662,8 +770,20 @@
         <div class="lbl">Tires installed</div>
       </div>
       <div class="stat">
+        <div class="num" id="statCost">$0</div>
+        <div class="lbl">Cost</div>
+      </div>
+      <div class="stat">
+        <div class="num" id="statProfit">$0</div>
+        <div class="lbl">Profit</div>
+      </div>
+      <div class="stat">
         <div class="num" id="statMiles">0</div>
         <div class="lbl">Miles driven</div>
+      </div>
+      <div class="stat">
+        <div class="num" id="statEmails">0</div>
+        <div class="lbl">Emails collected</div>
       </div>
     </div>
 
@@ -672,7 +792,8 @@
       <div id="byTruckBreakdown"></div>
     </div>
 
-    <button class="btn btn-primary" id="exportCsvBtn">Export CSV</button>
+    <button class="btn btn-primary" id="exportCsvBtn">Export CSV (CPA format)</button>
+    <button class="btn btn-secondary" id="exportFullCsvBtn">Export CSV (full data)</button>
 
     <div class="import-export-row">
       <button class="btn btn-secondary" id="exportJsonBtn">Backup (JSON)</button>
@@ -703,10 +824,11 @@
 // Change these PINs to whatever you want. 4-6 digits.
 const OWNER_PIN = '1234';
 const TECH_PIN = '5678';
+const SUPERVISOR_PIN = '9999';
 const ROLE_KEY = 'tire-service-log-role';
 
 // Paste your Apps Script Web App URL here once deployed.
-const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw9gpntN-tRy-hKhMviglbBpzDxMQKXJfxS45xwoSQlrecTun8J710KygtAnSNRIRpm/exec';
+const APPS_SCRIPT_URL = 'PASTE_YOUR_APPS_SCRIPT_URL_HERE';
 
 let currentRole = null;
 let activeJobId = null; // job currently being completed via the New Job form
@@ -719,17 +841,10 @@ function applyRole(role){
   document.getElementById('loginScreen').classList.add('hidden');
   document.getElementById('appWrapper').classList.remove('hidden');
 
-  // Land technician on My Jobs, owner on Log
   document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
   document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
-  if(role === 'tech'){
-    document.querySelector('.tab[data-tab="myjobs"]').classList.add('active');
-    document.getElementById('view-myjobs').classList.add('active');
-    loadMyJobs();
-  } else {
-    document.querySelector('.tab[data-tab="log"]').classList.add('active');
-    document.getElementById('view-log').classList.add('active');
-  }
+  document.querySelector('.tab[data-tab="log"]').classList.add('active');
+  document.getElementById('view-log').classList.add('active');
 }
 
 document.getElementById('pinSubmitBtn').addEventListener('click', attemptLogin);
@@ -739,7 +854,7 @@ document.getElementById('pinInput').addEventListener('keydown', (e)=>{
 function attemptLogin(){
   const val = document.getElementById('pinInput').value.trim();
   const errBox = document.getElementById('pinError');
-  if(val === OWNER_PIN){
+  if(val === OWNER_PIN || val === SUPERVISOR_PIN){
     errBox.classList.remove('show');
     applyRole('owner');
   } else if(val === TECH_PIN){
@@ -759,7 +874,6 @@ document.getElementById('logoutBtn').addEventListener('click', ()=>{
   document.getElementById('pinInput').value = '';
 });
 
-/* Restore session on load if already logged in this tab session */
 (function restoreSession(){
   const saved = sessionStorage.getItem(ROLE_KEY);
   if(saved === 'owner' || saved === 'tech'){
@@ -772,6 +886,380 @@ let entries = [];
 let editingId = null;
 let deletingId = null;
 
+/* ===== VEHICLE MAKE/MODEL ===== */
+const MAKE_MODELS = {
+  "Toyota": ["Camry","Corolla","RAV4","Highlander","Tacoma","Tundra","4Runner","Sienna","Prius","Avalon","Venza","Sequoia"],
+  "Honda": ["Civic","Accord","CR-V","Pilot","Odyssey","HR-V","Ridgeline","Passport","Fit","Insight"],
+  "Ford": ["F-150","Escape","Explorer","Mustang","Edge","Expedition","Fusion","Ranger","Bronco","Focus","Transit"],
+  "Chevrolet": ["Silverado","Equinox","Malibu","Tahoe","Traverse","Suburban","Colorado","Camaro","Impala","Trax"],
+  "Nissan": ["Altima","Sentra","Rogue","Murano","Pathfinder","Frontier","Titan","Maxima","Versa","Kicks"],
+  "Jeep": ["Grand Cherokee","Wrangler","Cherokee","Compass","Renegade","Gladiator","Patriot"],
+  "Hyundai": ["Elantra","Sonata","Tucson","Santa Fe","Kona","Palisade","Accent","Venue"],
+  "Kia": ["Optima","Forte","Sportage","Sorento","Soul","Telluride","Rio","Seltos"],
+  "Dodge": ["Charger","Challenger","Durango","Journey","Grand Caravan"],
+  "Ram": ["1500","2500","3500","ProMaster"],
+  "GMC": ["Sierra","Terrain","Acadia","Yukon","Canyon"],
+  "BMW": ["3 Series","5 Series","X3","X5","X1","7 Series","4 Series"],
+  "Mercedes-Benz": ["C-Class","E-Class","GLC","GLE","S-Class","A-Class","GLA"],
+  "Volkswagen": ["Jetta","Passat","Tiguan","Atlas","Golf","Beetle"],
+  "Subaru": ["Outback","Forester","Crosstrek","Impreza","Legacy","Ascent","WRX"],
+  "Mazda": ["Mazda3","Mazda6","CX-5","CX-9","CX-30","MX-5 Miata"],
+  "Lexus": ["RX","ES","NX","GX","IS","LX"],
+  "Audi": ["A4","A6","Q5","Q7","A3","Q3"],
+  "Chrysler": ["300","Pacifica","Voyager"],
+  "Buick": ["Encore","Enclave","Envision","LaCrosse"],
+  "Cadillac": ["Escalade","XT5","CT5","XT4"],
+  "Lincoln": ["Navigator","Aviator","Corsair","Nautilus"],
+  "Acura": ["MDX","RDX","TLX","ILX"],
+  "Infiniti": ["Q50","QX60","QX80","QX50"],
+  "Volvo": ["XC90","XC60","S60","XC40"],
+  "Mitsubishi": ["Outlander","Eclipse Cross","Mirage"],
+  "Tesla": ["Model 3","Model Y","Model S","Model X"]
+};
+
+function populateMakeOptions(makeSelectId){
+  const makeSelect = document.getElementById(makeSelectId);
+  const makes = Object.keys(MAKE_MODELS).sort();
+  makeSelect.innerHTML = '<option value="">Select make…</option>'
+    + makes.map(m => `<option>${m}</option>`).join('')
+    + '<option value="__custom">Other…</option>';
+}
+
+function handleMakeChange(makeSelectId, modelSelectId, makeCustomWrapId, modelSelectWrapId, makeCustomId){
+  const makeSel = document.getElementById(makeSelectId).value;
+  const makeCustomWrap = document.getElementById(makeCustomWrapId);
+  const modelSelect = document.getElementById(modelSelectId);
+  const modelCustomWrapId = modelSelectWrapId.replace('SelectWrap','CustomWrap');
+
+  if(makeSel === '__custom'){
+    makeCustomWrap.classList.remove('hidden');
+    document.getElementById(modelCustomWrapId)?.classList.add('hidden');
+    modelSelect.disabled = true;
+    modelSelect.innerHTML = '<option value="">N/A — custom make</option>';
+  } else if(makeSel && MAKE_MODELS[makeSel]){
+    makeCustomWrap.classList.add('hidden');
+    document.getElementById(makeCustomId).value = '';
+    document.getElementById(modelCustomWrapId)?.classList.add('hidden');
+    modelSelect.disabled = false;
+    modelSelect.innerHTML = '<option value="">Select model…</option>'
+      + MAKE_MODELS[makeSel].map(m => `<option>${m}</option>`).join('')
+      + '<option value="__custom">Other…</option>';
+  } else {
+    makeCustomWrap.classList.add('hidden');
+    document.getElementById(makeCustomId).value = '';
+    document.getElementById(modelCustomWrapId)?.classList.add('hidden');
+    modelSelect.disabled = true;
+    modelSelect.innerHTML = '<option value="">Select make first…</option>';
+  }
+}
+
+function handleModelChange(modelSelectId, modelCustomWrapId, modelCustomId){
+  const modelSel = document.getElementById(modelSelectId).value;
+  document.getElementById(modelCustomWrapId).classList.toggle('hidden', modelSel !== '__custom');
+  if(modelSel !== '__custom') document.getElementById(modelCustomId).value = '';
+}
+
+function getMakeValue(makeSelectId, makeCustomId){
+  const sel = document.getElementById(makeSelectId).value;
+  if(sel === '__custom') return document.getElementById(makeCustomId).value.trim();
+  return sel;
+}
+function getModelValue(modelSelectId, modelCustomId){
+  const sel = document.getElementById(modelSelectId).value;
+  if(sel === '__custom') return document.getElementById(modelCustomId).value.trim();
+  return sel;
+}
+
+function setVehicleFields(makeSelectId, modelSelectId, makeCustomWrapId, modelSelectWrapId, makeCustomId, modelCustomWrapId, modelCustomId, savedMake, savedModel){
+  const makeSelect = document.getElementById(makeSelectId);
+  const modelSelect = document.getElementById(modelSelectId);
+  document.getElementById(makeCustomWrapId).classList.add('hidden');
+  document.getElementById(modelCustomWrapId).classList.add('hidden');
+  document.getElementById(makeCustomId).value = '';
+  document.getElementById(modelCustomId).value = '';
+
+  if(savedMake && MAKE_MODELS[savedMake]){
+    makeSelect.value = savedMake;
+    modelSelect.disabled = false;
+    modelSelect.innerHTML = '<option value="">Select model…</option>'
+      + MAKE_MODELS[savedMake].map(m => `<option>${m}</option>`).join('')
+      + '<option value="__custom">Other…</option>';
+    if(savedModel && MAKE_MODELS[savedMake].includes(savedModel)){
+      modelSelect.value = savedModel;
+    } else if(savedModel){
+      modelSelect.value = '__custom';
+      document.getElementById(modelCustomWrapId).classList.remove('hidden');
+      document.getElementById(modelCustomId).value = savedModel;
+    }
+  } else if(savedMake){
+    makeSelect.value = '__custom';
+    document.getElementById(makeCustomWrapId).classList.remove('hidden');
+    document.getElementById(makeCustomId).value = savedMake;
+    modelSelect.disabled = true;
+    if(savedModel){
+      modelSelect.innerHTML = '<option value="__custom" selected>Other…</option>';
+      document.getElementById(modelCustomWrapId).classList.remove('hidden');
+      document.getElementById(modelCustomId).value = savedModel;
+    } else {
+      modelSelect.innerHTML = '<option value="">N/A — custom make</option>';
+    }
+  } else {
+    makeSelect.value = '';
+    modelSelect.disabled = true;
+    modelSelect.innerHTML = '<option value="">Select make first…</option>';
+  }
+}
+
+populateMakeOptions('vehMake');
+
+/* ===== TIRE BRAND (flat list + Other) ===== */
+const TIRE_BRANDS = ["Michelin","Goodyear","Bridgestone","Firestone","Continental","Pirelli",
+  "BFGoodrich","Hankook","Yokohama","Toyo","Cooper","General","Kumho","Nitto","Falken","Nexen","Dunlop","Uniroyal"];
+
+function populateBrandOptions(selectEl){
+  selectEl.innerHTML = '<option value="">Select brand…</option>'
+    + TIRE_BRANDS.map(b => `<option>${b}</option>`).join('')
+    + '<option value="__custom">Other…</option>';
+}
+function handleBrandChange(selectId, customWrapId){
+  const val = document.getElementById(selectId).value;
+  document.getElementById(customWrapId).classList.toggle('hidden', val !== '__custom');
+}
+function getBrandValue(selectId, customId){
+  const sel = document.getElementById(selectId).value;
+  if(sel === '__custom') return document.getElementById(customId).value.trim();
+  return sel;
+}
+
+/* Job type helpers (multi-select pill buttons + custom) */
+/* Job type (repeatable dropdown rows, same pattern as tire lines) */
+const JOB_TYPE_OPTIONS = ['Install & Balance','Tire Install','Tire Rotation','Tire Balancing','TPMS Sensor Install'];
+let jobTypeRowIds = [];
+let jobTypeRowCounter = 0;
+
+function jobTypeRowHtml(rowId, value){
+  value = value || '';
+  const isKnown = JOB_TYPE_OPTIONS.includes(value);
+  const isCustom = value && !isKnown;
+  return `
+    <div class="tire-line-card" id="jobTypeRow_${rowId}" style="display:flex; align-items:flex-start; gap:8px; flex-wrap:wrap;">
+      <div style="flex:1; min-width:150px;">
+        <select id="jts_${rowId}" onchange="handleJobTypeRowChange(${rowId})">
+          <option value="">Select job type…</option>
+          ${JOB_TYPE_OPTIONS.map(o => `<option ${o===value?'selected':''}>${o}</option>`).join('')}
+          <option value="__custom" ${isCustom?'selected':''}>Other…</option>
+        </select>
+        <input type="text" id="jtc_${rowId}" placeholder="Describe the job" class="${isCustom?'':'hidden'}" style="margin-top:8px;" value="${isCustom?escapeHtml(value):''}">
+      </div>
+      <button type="button" class="remove-line-btn" onclick="removeJobTypeRow(${rowId})">Remove</button>
+    </div>
+  `;
+}
+
+function handleJobTypeRowChange(rowId){
+  const sel = document.getElementById('jts_' + rowId).value;
+  document.getElementById('jtc_' + rowId).classList.toggle('hidden', sel !== '__custom');
+}
+
+function addJobTypeRow(value){
+  const rowId = ++jobTypeRowCounter;
+  jobTypeRowIds.push(rowId);
+  document.getElementById('jobTypeRowsContainer').insertAdjacentHTML('beforeend', jobTypeRowHtml(rowId, value));
+  updateJobTypeRemoveButtons();
+}
+
+function removeJobTypeRow(rowId){
+  const el = document.getElementById('jobTypeRow_' + rowId);
+  if(el) el.remove();
+  jobTypeRowIds = jobTypeRowIds.filter(id => id !== rowId);
+  if(jobTypeRowIds.length === 0) addJobTypeRow();
+  updateJobTypeRemoveButtons();
+}
+
+function updateJobTypeRemoveButtons(){
+  const show = jobTypeRowIds.length > 1;
+  document.querySelectorAll('#jobTypeRowsContainer .remove-line-btn').forEach(b => b.style.display = show ? 'inline-block' : 'none');
+}
+
+function clearJobTypeRows(){
+  document.getElementById('jobTypeRowsContainer').innerHTML = '';
+  jobTypeRowIds = [];
+}
+
+function getJobTypes(){
+  const values = [];
+  jobTypeRowIds.forEach(id => {
+    const sel = document.getElementById('jts_' + id).value;
+    if(sel === '__custom'){
+      const custom = document.getElementById('jtc_' + id).value.trim();
+      if(custom) values.push(custom);
+    } else if(sel){
+      values.push(sel);
+    }
+  });
+  return values;
+}
+function setJobTypes(savedValues){
+  const values = Array.isArray(savedValues) ? savedValues : (savedValues ? [savedValues] : []);
+  clearJobTypeRows();
+  if(values.length === 0){
+    addJobTypeRow();
+  } else {
+    values.forEach(v => addJobTypeRow(v));
+  }
+}
+function setBrandValue(selectId, customWrapId, customId, savedBrand){
+  const sel = document.getElementById(selectId);
+  document.getElementById(customWrapId).classList.add('hidden');
+  document.getElementById(customId).value = '';
+  if(savedBrand && TIRE_BRANDS.includes(savedBrand)){
+    sel.value = savedBrand;
+  } else if(savedBrand){
+    sel.value = '__custom';
+    document.getElementById(customWrapId).classList.remove('hidden');
+    document.getElementById(customId).value = savedBrand;
+  } else {
+    sel.value = '';
+  }
+}
+
+/* ===== TIRE LINE ITEMS (repeatable) ===== */
+let tireLineIds = [];
+let tireLineCounter = 0;
+
+function tireLineRowHtml(lineId, data){
+  data = data || {};
+  return `
+    <div class="tire-line-card" id="tireLine_${lineId}">
+      <div class="tire-line-header">
+        <span class="tire-line-title">Tire size</span>
+        <button type="button" class="remove-line-btn" onclick="removeTireLine(${lineId})">Remove</button>
+      </div>
+      <div class="row3">
+        <div><input type="number" id="tw_${lineId}" placeholder="275" inputmode="numeric" value="${data.width||''}"></div>
+        <div><input type="number" id="ta_${lineId}" placeholder="70" inputmode="numeric" value="${data.aspect||''}"></div>
+        <div><input type="number" id="tr_${lineId}" placeholder="18" inputmode="numeric" value="${data.rim||''}"></div>
+      </div>
+      <div class="size-caption"><span>Width</span><span>Aspect ratio</span><span>Rim (in)</span></div>
+
+      <div class="row2" style="margin-top:8px;">
+        <div>
+          <label style="margin-top:0;">Quantity</label>
+          <input type="number" id="tq_${lineId}" min="1" placeholder="2" value="${data.qty||''}">
+        </div>
+        <div>
+          <label style="margin-top:0;">Brand</label>
+          <select id="tb_${lineId}" onchange="handleBrandChange('tb_${lineId}','tbCustomWrap_${lineId}')"></select>
+        </div>
+      </div>
+      <div class="hidden" id="tbCustomWrap_${lineId}" style="margin-top:8px;">
+        <label style="margin-top:0;">Custom brand</label>
+        <input id="tbCustom_${lineId}" placeholder="Brand name">
+      </div>
+
+      <div class="row2" style="margin-top:8px;">
+        <div>
+          <label style="margin-top:0;">Price charged ($/tire)</label>
+          <input type="number" id="tp_${lineId}" step="0.01" min="0" placeholder="0.00" value="${data.price!==undefined?data.price:''}">
+        </div>
+        <div>
+          <label style="margin-top:0;">Balancing ($) — optional</label>
+          <input type="number" id="tbal_${lineId}" step="0.01" min="0" placeholder="0.00" value="${data.balancing!==undefined?data.balancing:''}">
+        </div>
+      </div>
+
+      <div class="cost-field-wrap">
+        <label style="margin-top:8px;">Cost ($ per tire)</label>
+        <input type="number" id="tc_${lineId}" step="0.01" min="0" placeholder="0.00" value="${data.cost!==undefined?data.cost:''}">
+      </div>
+    </div>
+  `;
+}
+
+function addTireLine(data){
+  const lineId = ++tireLineCounter;
+  tireLineIds.push(lineId);
+  document.getElementById('tireLinesContainer').insertAdjacentHTML('beforeend', tireLineRowHtml(lineId, data));
+  populateBrandOptions(document.getElementById('tb_' + lineId));
+  if(data && data.brand) setBrandValue('tb_' + lineId, 'tbCustomWrap_' + lineId, 'tbCustom_' + lineId, data.brand);
+  updateRemoveButtons();
+}
+
+function removeTireLine(lineId){
+  const el = document.getElementById('tireLine_' + lineId);
+  if(el) el.remove();
+  tireLineIds = tireLineIds.filter(id => id !== lineId);
+  if(tireLineIds.length === 0) addTireLine();
+  updateRemoveButtons();
+}
+
+function updateRemoveButtons(){
+  const show = tireLineIds.length > 1;
+  document.querySelectorAll('.remove-line-btn').forEach(b => b.style.display = show ? 'inline-block' : 'none');
+}
+
+function clearTireLines(){
+  document.getElementById('tireLinesContainer').innerHTML = '';
+  tireLineIds = [];
+}
+
+document.getElementById('addTireLineBtn').addEventListener('click', ()=> addTireLine());
+
+/* Read all currently-filled tire lines into an array. onlyComplete=true skips blank lines. */
+function collectTireLines(requirePrice){
+  const lines = [];
+  tireLineIds.forEach(id => {
+    const width = document.getElementById('tw_' + id).value.trim();
+    const aspect = document.getElementById('ta_' + id).value.trim();
+    const rim = document.getElementById('tr_' + id).value.trim();
+    const qty = document.getElementById('tq_' + id).value.trim();
+    const brand = getBrandValue('tb_' + id, 'tbCustom_' + id);
+    const priceRaw = document.getElementById('tp_' + id).value.trim();
+    const balancingRaw = document.getElementById('tbal_' + id).value.trim();
+    const costRaw = document.getElementById('tc_' + id).value.trim();
+    if(!width && !aspect && !rim && !qty) return; // fully blank line, skip
+    lines.push({
+      width, aspect, rim, qty,
+      brand,
+      price: priceRaw ? parseFloat(priceRaw) : 0,
+      balancing: balancingRaw ? parseFloat(balancingRaw) : 0,
+      cost: costRaw ? parseFloat(costRaw) : 0
+    });
+  });
+  return lines;
+}
+
+function tireSizeLabel(line){
+  return `${line.width || '?'}/${line.aspect || '?'}R${line.rim || '?'}`;
+}
+function lineTotals(entry){
+  const lines = entry.tireLines || [];
+  let price = 0, cost = 0, qty = 0;
+  lines.forEach(l => {
+    const lineQty = parseInt(l.qty) || 1;
+    price += ((parseFloat(l.price) || 0) * lineQty) + (parseFloat(l.balancing) || 0);
+    cost += (parseFloat(l.cost) || 0) * lineQty;
+    qty += parseInt(l.qty) || 0;
+  });
+  return { price, cost, qty };
+}
+
+const SALES_TAX_RATE = 0.065; // 6.5%
+function jobTotals(entry){
+  const base = lineTotals(entry);
+  const tax = base.price * SALES_TAX_RATE;
+  const total = base.price + tax;
+  const profit = base.price - base.cost;
+  return { saleAmount: base.price, tax, total, cost: base.cost, profit, qty: base.qty };
+}
+
+function tireLinesSummary(entry){
+  return (entry.tireLines || []).map(l =>
+    `${l.qty ? l.qty + 'x ' : ''}${tireSizeLabel(l)}${l.brand ? ' ' + l.brand : ''}`
+  ).join(', ');
+}
+
+/* ===== Storage / basics ===== */
 function load(){
   try{
     const raw = localStorage.getItem(STORAGE_KEY);
@@ -791,21 +1279,13 @@ function escapeHtml(str){
 }
 function fmtDate(iso){
   if(!iso) return '';
-  const [y,m,d] = iso.split('-');
+  const datePart = String(iso).split('T')[0];
+  const [y,m,d] = datePart.split('-');
+  if(!y || !m || !d) return String(iso);
   return `${m}/${d}/${y}`;
 }
 function fmtMoney(n){
   return '$' + (Math.round(n * 100) / 100).toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2});
-}
-function combineTireSize(width, aspect, rim){
-  if(!width && !aspect && !rim) return '';
-  return `${width || '?'}/${aspect || '?'}R${rim || '?'}`;
-}
-function parseTireSize(str){
-  if(!str) return {width:'', aspect:'', rim:''};
-  const m = String(str).match(/^(\d+)\s*\/\s*(\d+)\s*\/?\s*R?\s*(\d+)$/i);
-  if(m) return {width:m[1], aspect:m[2], rim:m[3]};
-  return {width:'', aspect:'', rim:''};
 }
 function showToast(msg){
   const t = document.getElementById('toast');
@@ -823,19 +1303,39 @@ document.querySelectorAll('.tab').forEach(tab=>{
     document.getElementById('view-' + tab.dataset.tab).classList.add('active');
     if(tab.dataset.tab === 'log') renderLog();
     if(tab.dataset.tab === 'summary') renderSummary();
-    if(tab.dataset.tab === 'myjobs') loadMyJobs();
-    if(tab.dataset.tab === 'assign') loadAllJobs();
+    if(tab.dataset.tab === 'assigned') loadAssigned();
   });
 });
 
 /* Truck toggle */
 let selectedTruck = '';
-document.querySelectorAll('.truck-btn').forEach(btn=>{
+document.querySelectorAll('.truck-toggle .truck-btn').forEach(btn=>{
   btn.addEventListener('click', ()=>{
-    document.querySelectorAll('.truck-btn').forEach(b=>b.classList.remove('selected'));
+    document.querySelectorAll('.truck-toggle .truck-btn').forEach(b=>b.classList.remove('selected'));
     btn.classList.add('selected');
     selectedTruck = btn.dataset.truck;
   });
+});
+
+/* Assign-to toggle */
+let selectedAssignTo = 'Technician';
+document.querySelectorAll('#assignToToggle .truck-btn').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('#assignToToggle .truck-btn').forEach(b=>b.classList.remove('selected'));
+    btn.classList.add('selected');
+    selectedAssignTo = btn.dataset.assignto;
+  });
+});
+
+/* Job type: add-row button */
+document.getElementById('addJobTypeRowBtn').addEventListener('click', ()=> addJobTypeRow());
+
+document.getElementById('tireStatus').addEventListener('change', (e)=>{
+  document.getElementById('dateOrderedWrap').classList.toggle('hidden', e.target.value !== 'Ordered');
+});
+
+document.getElementById('paymentStatus').addEventListener('change', (e)=>{
+  document.getElementById('paymentMethodWrap').classList.toggle('hidden', e.target.value !== 'Paid');
 });
 
 /* Mileage live calc */
@@ -852,25 +1352,41 @@ function updateMiles(){
 document.getElementById('mileageStart').addEventListener('input', updateMiles);
 document.getElementById('mileageEnd').addEventListener('input', updateMiles);
 
-/* Default date to today */
 function setDefaultDate(){
   const d = new Date();
   const iso = d.toISOString().slice(0,10);
   document.getElementById('jobDate').value = iso;
+  const orderTaken = document.getElementById('orderTakenDate');
+  if(orderTaken) orderTaken.value = iso;
 }
 
-/* Save job */
+/* ===== Save Job (completed ticket) ===== */
 document.getElementById('saveJobBtn').addEventListener('click', ()=>{
   const jobDate = document.getElementById('jobDate').value;
-  const priceChargedRaw = document.getElementById('priceCharged').value;
-  const tireWidth = document.getElementById('tireWidth').value.trim();
-  const tireAspect = document.getElementById('tireAspect').value.trim();
-  const tireRim = document.getElementById('tireRim').value.trim();
-  const tireSize = combineTireSize(tireWidth, tireAspect, tireRim);
-
   const errBox = document.getElementById('errorMsg');
-  if(!jobDate || !priceChargedRaw || !tireWidth || !tireAspect || !tireRim){
-    errBox.textContent = 'Date, tire size (all 3 parts), and price charged are required.';
+  const lines = collectTireLines();
+
+  if(!jobDate){
+    errBox.textContent = 'Date is required.';
+    errBox.classList.add('show');
+    return;
+  }
+  if(lines.length === 0){
+    errBox.textContent = 'At least one tire line (width/aspect/rim/quantity) is required.';
+    errBox.classList.add('show');
+    return;
+  }
+  for(const l of lines){
+    if(!l.width || !l.aspect || !l.rim || !l.qty){
+      errBox.textContent = 'Each tire line needs width, aspect ratio, rim, and quantity filled in.';
+      errBox.classList.add('show');
+      return;
+    }
+  }
+  const paymentStatus = document.getElementById('paymentStatus').value;
+  const paymentMethod = document.getElementById('paymentMethod').value;
+  if(paymentStatus === 'Paid' && !paymentMethod){
+    errBox.textContent = 'Select a payment method, or change the payment status.';
     errBox.classList.add('show');
     return;
   }
@@ -888,15 +1404,16 @@ document.getElementById('saveJobBtn').addEventListener('click', ()=>{
     id: editingId || ('job_' + Date.now()),
     createdAt: editingId ? (entries.find(e=>e.id===editingId)||{}).createdAt || Date.now() : Date.now(),
     jobDate,
+    jobTypes: getJobTypes(),
     customerName: document.getElementById('customerName').value.trim(),
     customerPhone: document.getElementById('customerPhone').value.trim(),
+    customerEmail: document.getElementById('customerEmail').value.trim(),
     vehYear: document.getElementById('vehYear').value.trim(),
-    vehMake: document.getElementById('vehMake').value.trim(),
-    vehModel: document.getElementById('vehModel').value.trim(),
-    tireSize,
-    tireQty: document.getElementById('tireQty').value.trim(),
-    tireBrand: document.getElementById('tireBrand').value.trim(),
-    priceCharged: parseFloat(priceChargedRaw),
+    vehMake: getMakeValue('vehMake','makeCustom'),
+    vehModel: getModelValue('vehModel','modelCustom'),
+    tireLines: lines,
+    paymentStatus,
+    paymentMethod: paymentStatus === 'Paid' ? paymentMethod : '',
     truck: selectedTruck,
     mileageStart: mileageStart || '',
     mileageEnd: mileageEnd || '',
@@ -915,7 +1432,6 @@ document.getElementById('saveJobBtn').addEventListener('click', ()=>{
   }
   persist();
 
-  // If this ticket completed an assigned job, sync that back to the shared Jobs sheet
   if(activeJobId){
     markJobComplete(activeJobId, entry.id);
     activeJobId = null;
@@ -925,7 +1441,6 @@ document.getElementById('saveJobBtn').addEventListener('click', ()=>{
   editingId = null;
   document.getElementById('cancelEditBtn').style.display = 'none';
 
-  // jump to log view
   document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
   document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
   document.querySelector('.tab[data-tab="log"]').classList.add('active');
@@ -934,10 +1449,16 @@ document.getElementById('saveJobBtn').addEventListener('click', ()=>{
 });
 
 function resetForm(){
-  ['customerName','customerPhone','vehYear','vehMake','vehModel','tireWidth','tireAspect','tireRim','tireQty',
-   'tireBrand','priceCharged','mileageStart','mileageEnd','jobLocation','jobNotes']
+  ['customerName','customerPhone','customerEmail','vehYear','mileageStart','mileageEnd','jobLocation','jobNotes']
     .forEach(id => document.getElementById(id).value = '');
-  document.querySelectorAll('.truck-btn').forEach(b=>b.classList.remove('selected'));
+  setVehicleFields('vehMake','vehModel','makeCustomWrap','modelSelectWrap','makeCustom','modelCustomWrap','modelCustom','','');
+  setJobTypes([]);
+  clearTireLines();
+  addTireLine();
+  document.getElementById('paymentStatus').value = 'Unpaid';
+  document.getElementById('paymentMethod').value = '';
+  document.getElementById('paymentMethodWrap').classList.add('hidden');
+  document.querySelectorAll('.truck-toggle .truck-btn').forEach(b=>b.classList.remove('selected'));
   selectedTruck = '';
   document.getElementById('milesDisplay').innerHTML = '';
   setDefaultDate();
@@ -956,24 +1477,26 @@ function startEdit(id){
   editingId = id;
 
   document.getElementById('jobDate').value = e.jobDate || '';
+  setJobTypes(e.jobTypes || []);
   document.getElementById('customerName').value = e.customerName || '';
   document.getElementById('customerPhone').value = e.customerPhone || '';
+  document.getElementById('customerEmail').value = e.customerEmail || '';
   document.getElementById('vehYear').value = e.vehYear || '';
-  document.getElementById('vehMake').value = e.vehMake || '';
-  document.getElementById('vehModel').value = e.vehModel || '';
-  const parsed = parseTireSize(e.tireSize);
-  document.getElementById('tireWidth').value = parsed.width;
-  document.getElementById('tireAspect').value = parsed.aspect;
-  document.getElementById('tireRim').value = parsed.rim;
-  document.getElementById('tireQty').value = e.tireQty || '';
-  document.getElementById('tireBrand').value = e.tireBrand || '';
-  document.getElementById('priceCharged').value = e.priceCharged ?? '';
+  setVehicleFields('vehMake','vehModel','makeCustomWrap','modelSelectWrap','makeCustom','modelCustomWrap','modelCustom', e.vehMake || '', e.vehModel || '');
+
+  clearTireLines();
+  (e.tireLines && e.tireLines.length ? e.tireLines : [{}]).forEach(line => addTireLine(line));
+
+  document.getElementById('paymentStatus').value = e.paymentStatus || 'Unpaid';
+  document.getElementById('paymentMethod').value = e.paymentMethod || '';
+  document.getElementById('paymentMethodWrap').classList.toggle('hidden', e.paymentStatus !== 'Paid');
+
   document.getElementById('mileageStart').value = e.mileageStart || '';
   document.getElementById('mileageEnd').value = e.mileageEnd || '';
   document.getElementById('jobLocation').value = e.jobLocation || '';
   document.getElementById('jobNotes').value = e.jobNotes || '';
 
-  document.querySelectorAll('.truck-btn').forEach(b=>{
+  document.querySelectorAll('.truck-toggle .truck-btn').forEach(b=>{
     b.classList.toggle('selected', b.dataset.truck === e.truck);
   });
   selectedTruck = e.truck || '';
@@ -1017,20 +1540,20 @@ function renderLog(){
   const sorted = [...entries].sort((a,b)=> (b.jobDate||'').localeCompare(a.jobDate||'') || b.createdAt - a.createdAt);
   list.innerHTML = sorted.map(e => {
     const vehicle = [e.vehYear, e.vehMake, e.vehModel].filter(Boolean).join(' ') || 'Vehicle not specified';
-    const tireLine = [
-      e.tireQty ? `${e.tireQty}x` : '',
-      e.tireSize || '',
-      e.tireBrand || ''
-    ].filter(Boolean).join(' ');
+    const tireLine = tireLinesSummary(e);
+    const totals = jobTotals(e);
     return `
       <div class="ticket">
         <div class="ticket-top">
           <div>
+            ${(e.jobTypes && e.jobTypes.length) ? `<div class="ticket-tire" style="font-weight:700; color:var(--navy);">${escapeHtml(e.jobTypes.join(', '))}</div>` : ''}
             <div class="ticket-vehicle">${escapeHtml(vehicle)}</div>
             <div class="ticket-tire">${escapeHtml(tireLine)}</div>
           </div>
-          <div class="ticket-price">${fmtMoney(e.priceCharged || 0)}</div>
+          <div class="ticket-price">${fmtMoney(totals.total)}</div>
         </div>
+        <div class="ticket-meta"><span><span class="label">Sale</span>${fmtMoney(totals.saleAmount)}</span><span><span class="label">Tax</span>${fmtMoney(totals.tax)}</span></div>
+        <div><span class="payment-badge ${e.paymentStatus === 'Paid' ? 'paid' : (e.paymentStatus === 'Invoiced' ? 'invoiced' : 'unpaid')}">${e.paymentStatus === 'Paid' ? 'Paid — ' + escapeHtml(e.paymentMethod) : (e.paymentStatus === 'Invoiced' ? 'Invoiced — awaiting payment' : 'Unpaid')}</span></div>
         ${(e.truck || e.miles || e.customerName) ? `
         <div class="ticket-meta">
           ${e.truck ? `<span><span class="label">Truck</span>${escapeHtml(e.truck)}</span>` : ''}
@@ -1074,21 +1597,31 @@ function getFilteredEntries(){
 function renderSummary(){
   const filtered = getFilteredEntries();
   const jobs = filtered.length;
-  const revenue = filtered.reduce((sum,e)=> sum + (e.priceCharged || 0), 0);
-  const tires = filtered.reduce((sum,e)=> sum + (parseInt(e.tireQty) || 0), 0);
+  let revenue = 0, cost = 0, tires = 0;
+  filtered.forEach(e => {
+    const t = lineTotals(e);
+    revenue += t.price;
+    cost += t.cost;
+    tires += t.qty;
+  });
   const miles = filtered.reduce((sum,e)=> sum + (e.miles || 0), 0);
+  const emailsCollected = filtered.filter(e => e.customerEmail && e.customerEmail.trim()).length;
 
   document.getElementById('statJobs').textContent = jobs;
   document.getElementById('statRevenue').textContent = fmtMoney(revenue).replace('.00','');
   document.getElementById('statTires').textContent = tires;
+  document.getElementById('statCost').textContent = fmtMoney(cost).replace('.00','');
+  document.getElementById('statProfit').textContent = fmtMoney(revenue - cost).replace('.00','');
   document.getElementById('statMiles').textContent = miles.toLocaleString();
+  document.getElementById('statEmails').textContent = jobs > 0 ? `${emailsCollected}/${jobs}` : '0';
 
   const byTruck = {};
   filtered.forEach(e=>{
     const t = e.truck || 'Unassigned';
+    const totals = lineTotals(e);
     if(!byTruck[t]) byTruck[t] = {jobs:0, revenue:0, miles:0};
     byTruck[t].jobs++;
-    byTruck[t].revenue += (e.priceCharged || 0);
+    byTruck[t].revenue += totals.price;
     byTruck[t].miles += (e.miles || 0);
   });
   const breakdown = document.getElementById('byTruckBreakdown');
@@ -1109,26 +1642,22 @@ document.getElementById('summaryTruck').addEventListener('change', renderSummary
 
 /* CSV export */
 document.getElementById('exportCsvBtn').addEventListener('click', ()=>{
-  const headers = ['Date','Customer Name','Customer Phone','Year','Make','Model','Tire Size','Tire Qty','Tire Brand','Tire Cost','Price Charged','Truck','Mileage Start','Mileage End','Miles Driven','Location','Notes'];
-  const rows = entries.map(e => [
-    fmtDate(e.jobDate),
-    e.customerName || '',
-    e.customerPhone || '',
-    e.vehYear || '',
-    e.vehMake || '',
-    e.vehModel || '',
-    e.tireSize || '',
-    e.tireQty || '',
-    e.tireBrand || '',
-    '', // Tire Cost — left blank, fill in from purchase records
-    (e.priceCharged || 0).toFixed(2),
-    e.truck || '',
-    e.mileageStart || '',
-    e.mileageEnd || '',
-    e.miles !== null && e.miles !== undefined ? e.miles : '',
-    e.jobLocation || '',
-    e.jobNotes || ''
-  ]);
+  const headers = ['Tire','Date','Customer Name','Job','Sale Amount','Sales Tax','Total','Payment','Cost','Profit'];
+  const rows = entries.map(e => {
+    const t = jobTotals(e);
+    return [
+      tireLinesSummary(e),
+      fmtDate(e.jobDate),
+      e.customerName || '',
+      (e.jobTypes && e.jobTypes.length) ? e.jobTypes.join('; ') : '',
+      t.saleAmount.toFixed(2),
+      t.tax.toFixed(2),
+      t.total.toFixed(2),
+      e.paymentStatus === 'Paid' ? (e.paymentMethod || 'Paid') : (e.paymentStatus || 'Unpaid'),
+      t.cost.toFixed(2),
+      t.profit.toFixed(2)
+    ];
+  });
 
   const csvEscape = (val) => {
     const s = String(val ?? '');
@@ -1152,38 +1681,134 @@ document.getElementById('exportCsvBtn').addEventListener('click', ()=>{
   showToast('CSV exported');
 });
 
+/* Full data CSV export — everything captured, for the owner's own records */
+document.getElementById('exportFullCsvBtn').addEventListener('click', ()=>{
+  const headers = ['Date','Job Type','Customer Name','Customer Phone','Customer Email','Year','Make','Model',
+    'Tire Lines','Sale Amount','Sales Tax','Total','Payment Status','Payment Method','Cost','Profit',
+    'Truck','Mileage Start','Mileage End','Miles Driven','Location','Notes'];
+  const rows = entries.map(e => {
+    const t = jobTotals(e);
+    return [
+      fmtDate(e.jobDate),
+      (e.jobTypes && e.jobTypes.length) ? e.jobTypes.join('; ') : '',
+      e.customerName || '',
+      e.customerPhone || '',
+      e.customerEmail || '',
+      e.vehYear || '',
+      e.vehMake || '',
+      e.vehModel || '',
+      tireLinesSummary(e),
+      t.saleAmount.toFixed(2),
+      t.tax.toFixed(2),
+      t.total.toFixed(2),
+      e.paymentStatus || 'Unpaid',
+      e.paymentMethod || '',
+      t.cost.toFixed(2),
+      t.profit.toFixed(2),
+      e.truck || '',
+      e.mileageStart || '',
+      e.mileageEnd || '',
+      e.miles !== null && e.miles !== undefined ? e.miles : '',
+      e.jobLocation || '',
+      e.jobNotes || ''
+    ];
+  });
+
+  const csvEscape = (val) => {
+    const s = String(val ?? '');
+    if(s.includes(',') || s.includes('"') || s.includes('\n')){
+      return '"' + s.replace(/"/g,'""') + '"';
+    }
+    return s;
+  };
+
+  const csv = [headers, ...rows].map(row => row.map(csvEscape).join(',')).join('\n');
+  const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const today = new Date().toISOString().slice(0,10);
+  a.href = url;
+  a.download = `tire-service-log-full-${today}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  showToast('Full CSV exported');
+});
+
 /* ===== JOBS (shared via Google Sheet / Apps Script) ===== */
 
-async function loadMyJobs(){
-  const list = document.getElementById('myJobsList');
+async function loadAssigned(){
+  const list = document.getElementById('assignedList');
   list.innerHTML = '<div class="empty-state">Loading...</div>';
   try{
-    const res = await fetch(`${APPS_SCRIPT_URL}?action=listJobs&status=Assigned`);
-    const data = await res.json();
-    renderMyJobs(data.jobs || []);
+    if(currentRole === 'tech'){
+      const res = await fetch(`${APPS_SCRIPT_URL}?action=listJobs&status=Assigned`);
+      const data = await res.json();
+      const jobs = (data.jobs || []).filter(j => !j.AssignedTo || j.AssignedTo === 'Technician');
+      renderAssignedForTech(jobs);
+    } else {
+      const res = await fetch(`${APPS_SCRIPT_URL}?action=listJobs`);
+      const data = await res.json();
+      renderAssignedForOwner(data.jobs || []);
+    }
   }catch(err){
     list.innerHTML = '<div class="empty-state">Could not load jobs. Check your connection and try Refresh.</div>';
   }
 }
-document.getElementById('refreshJobsBtn').addEventListener('click', loadMyJobs);
+document.getElementById('refreshAssignedBtn').addEventListener('click', loadAssigned);
 
-function renderMyJobs(jobs){
-  const list = document.getElementById('myJobsList');
+function jobDetailLines(j){
+  let lines = [];
+  try{
+    const parsed = j.TireLinesJson ? JSON.parse(j.TireLinesJson) : [];
+    lines = parsed.map(l => `${l.qty ? l.qty+'x ' : ''}${l.width||'?'}/${l.aspect||'?'}R${l.rim||'?'}${l.brand ? ' '+l.brand : ''}`);
+  }catch(err){ lines = []; }
+  return lines;
+}
+
+function renderAssignedForTech(jobs){
+  const list = document.getElementById('assignedList');
   if(jobs.length === 0){
     list.innerHTML = '<div class="empty-state">No open jobs assigned right now.</div>';
     return;
   }
   list.innerHTML = jobs.map(j => {
     const vehicle = [j.VehYear, j.VehMake, j.VehModel].filter(Boolean).join(' ');
-    const tireLine = [j.TireQty ? `${j.TireQty}x` : '', j.TireSize, j.TireBrand].filter(Boolean).join(' ');
+    const tireLines = jobDetailLines(j);
     return `
       <div class="job-card">
         <div class="job-addr">${escapeHtml(j.Address || 'No address given')}</div>
+        ${j.NeededDate ? `<div class="job-detail"><strong>Needed by:</strong> ${escapeHtml(fmtDate(j.NeededDate))}</div>` : ''}
+        ${j.TireStatus ? `<div class="job-detail"><strong>Tire status:</strong> ${escapeHtml(j.TireStatus)}</div>` : ''}
         ${vehicle ? `<div class="job-detail">${escapeHtml(vehicle)}</div>` : ''}
-        ${tireLine ? `<div class="job-detail">${escapeHtml(tireLine)}</div>` : ''}
+        ${tireLines.map(t => `<div class="job-detail">${escapeHtml(t)}</div>`).join('')}
         ${j.Notes ? `<div class="job-detail">${escapeHtml(j.Notes)}</div>` : ''}
         <div class="job-status">Assigned</div>
         <button class="start-job-btn" onclick='startJob(${JSON.stringify(j).replace(/'/g,"&#39;")})'>Start This Job</button>
+      </div>
+    `;
+  }).join('');
+}
+
+function renderAssignedForOwner(jobs){
+  const list = document.getElementById('assignedList');
+  if(jobs.length === 0){
+    list.innerHTML = '<div class="empty-state">No jobs assigned yet.</div>';
+    return;
+  }
+  list.innerHTML = jobs.map(j => {
+    const tireLines = jobDetailLines(j);
+    return `
+      <div class="job-card ${j.Status === 'Completed' ? 'completed' : ''}">
+        <div class="job-addr">${escapeHtml(j.Address || 'No address given')}</div>
+        ${j.OrderTakenDate ? `<div class="job-detail"><strong>Order taken:</strong> ${escapeHtml(fmtDate(j.OrderTakenDate))}</div>` : ''}
+        ${j.NeededDate ? `<div class="job-detail"><strong>Needed by:</strong> ${escapeHtml(fmtDate(j.NeededDate))}</div>` : ''}
+        ${j.TireStatus ? `<div class="job-detail"><strong>Tire status:</strong> ${escapeHtml(j.TireStatus)}${j.TireStatus === 'Ordered' && j.DateOrdered ? ' (ordered ' + escapeHtml(fmtDate(j.DateOrdered)) + ')' : ''}</div>` : ''}
+        ${tireLines.map(t => `<div class="job-detail">${escapeHtml(t)}</div>`).join('')}
+        <div class="job-detail">Assigned to: ${escapeHtml(j.AssignedTo || 'Technician')}</div>
+        <div class="job-status" style="color:${j.Status === 'Completed' ? 'var(--success)' : 'var(--gold)'}">${escapeHtml(j.Status || '')}</div>
+        ${(j.Status === 'Assigned' && j.AssignedTo === 'Owner') ? `<button class="start-job-btn" onclick='startJob(${JSON.stringify(j).replace(/'/g,"&#39;")})'>Start This Job</button>` : ''}
       </div>
     `;
   }).join('');
@@ -1194,14 +1819,14 @@ function startJob(job){
   resetForm();
   document.getElementById('jobLocation').value = job.Address || '';
   document.getElementById('vehYear').value = job.VehYear || '';
-  document.getElementById('vehMake').value = job.VehMake || '';
-  document.getElementById('vehModel').value = job.VehModel || '';
-  const parsedJobTire = parseTireSize(job.TireSize);
-  document.getElementById('tireWidth').value = parsedJobTire.width;
-  document.getElementById('tireAspect').value = parsedJobTire.aspect;
-  document.getElementById('tireRim').value = parsedJobTire.rim;
-  document.getElementById('tireQty').value = job.TireQty || '';
-  document.getElementById('tireBrand').value = job.TireBrand || '';
+  setVehicleFields('vehMake','vehModel','makeCustomWrap','modelSelectWrap','makeCustom','modelCustomWrap','modelCustom', job.VehMake || '', job.VehModel || '');
+
+  clearTireLines();
+  let jobLines = [];
+  try{ jobLines = job.TireLinesJson ? JSON.parse(job.TireLinesJson) : []; }catch(err){ jobLines = []; }
+  if(jobLines.length === 0) jobLines = [{}];
+  jobLines.forEach(l => addTireLine({ width:l.width, aspect:l.aspect, rim:l.rim, qty:l.qty, brand:l.brand }));
+
   if(job.Notes) document.getElementById('jobNotes').value = job.Notes;
 
   document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
@@ -1219,21 +1844,28 @@ async function markJobComplete(jobId, ticketRef){
       body: JSON.stringify({ action:'completeJob', jobId, ticketRef })
     });
   }catch(err){
-    // Non-fatal — ticket is already saved locally either way
     console.warn('Could not sync job completion', err);
   }
 }
 
-/* Owner: create + view jobs */
+/* Owner: assign job directly from the New Job form */
 document.getElementById('assignJobBtn').addEventListener('click', async ()=>{
-  const address = document.getElementById('assignAddress').value.trim();
-  const aTireWidth = document.getElementById('assignTireWidth').value.trim();
-  const aTireAspect = document.getElementById('assignTireAspect').value.trim();
-  const aTireRim = document.getElementById('assignTireRim').value.trim();
-  const tireSize = combineTireSize(aTireWidth, aTireAspect, aTireRim);
+  const address = document.getElementById('jobLocation').value.trim();
   const errBox = document.getElementById('assignErrorMsg');
-  if(!address || !aTireWidth || !aTireAspect || !aTireRim){
-    errBox.textContent = 'Address and tire size (all 3 parts) are required.';
+  const lines = collectTireLines().map(l => ({ width:l.width, aspect:l.aspect, rim:l.rim, qty:l.qty, brand:l.brand }));
+
+  if(!address){
+    errBox.textContent = 'Job location / address is required to assign a job.';
+    errBox.classList.add('show');
+    return;
+  }
+  if(lines.length === 0 || !lines[0].width || !lines[0].aspect || !lines[0].rim){
+    errBox.textContent = 'At least one tire size (width/aspect/rim) is required to assign a job.';
+    errBox.classList.add('show');
+    return;
+  }
+  if(APPS_SCRIPT_URL.includes('PASTE_YOUR_APPS_SCRIPT_URL_HERE')){
+    errBox.textContent = 'This app isn\'t connected to a Google Sheet yet — the Apps Script URL still needs to be set.';
     errBox.classList.add('show');
     return;
   }
@@ -1242,53 +1874,42 @@ document.getElementById('assignJobBtn').addEventListener('click', async ()=>{
   const payload = {
     action: 'createJob',
     address,
-    vehYear: document.getElementById('assignVehYear').value.trim(),
-    vehMake: document.getElementById('assignVehMake').value.trim(),
-    vehModel: document.getElementById('assignVehModel').value.trim(),
-    tireSize,
-    tireQty: document.getElementById('assignTireQty').value.trim(),
-    tireBrand: document.getElementById('assignTireBrand').value.trim(),
-    notes: document.getElementById('assignNotes').value.trim()
+    vehYear: document.getElementById('vehYear').value.trim(),
+    vehMake: getMakeValue('vehMake','makeCustom'),
+    vehModel: getModelValue('vehModel','modelCustom'),
+    tireLinesJson: JSON.stringify(lines),
+    notes: document.getElementById('jobNotes').value.trim(),
+    assignedTo: selectedAssignTo,
+    orderTakenDate: document.getElementById('orderTakenDate').value,
+    neededDate: document.getElementById('neededDate').value,
+    tireStatus: document.getElementById('tireStatus').value,
+    dateOrdered: document.getElementById('tireStatus').value === 'Ordered' ? document.getElementById('dateOrdered').value : ''
   };
 
   try{
-    await fetch(APPS_SCRIPT_URL, {
+    const res = await fetch(APPS_SCRIPT_URL, {
       method:'POST',
       headers:{'Content-Type':'text/plain;charset=utf-8'},
       body: JSON.stringify(payload)
     });
+    if(!res.ok) throw new Error('Server responded with an error');
+    const result = await res.json();
+    if(result.error) throw new Error(result.error);
     showToast('Job assigned');
-    ['assignAddress','assignVehYear','assignVehMake','assignVehModel','assignTireWidth','assignTireAspect','assignTireRim','assignTireQty','assignTireBrand','assignNotes']
-      .forEach(id => document.getElementById(id).value = '');
+    resetForm();
+    document.getElementById('tireStatus').value = 'In Stock';
+    document.getElementById('dateOrderedWrap').classList.add('hidden');
+    document.getElementById('dateOrdered').value = '';
+    document.getElementById('neededDate').value = '';
+    document.querySelectorAll('#assignToToggle .truck-btn').forEach(b=>{
+      b.classList.toggle('selected', b.dataset.assignto === 'Technician');
+    });
+    selectedAssignTo = 'Technician';
   }catch(err){
     errBox.textContent = 'Could not reach the server. Check your connection and try again.';
     errBox.classList.add('show');
   }
 });
-
-async function loadAllJobs(){
-  const list = document.getElementById('allJobsList');
-  list.innerHTML = '<div class="empty-state">Loading...</div>';
-  try{
-    const res = await fetch(`${APPS_SCRIPT_URL}?action=listJobs`);
-    const data = await res.json();
-    const jobs = data.jobs || [];
-    if(jobs.length === 0){
-      list.innerHTML = '<div class="empty-state">No jobs yet.</div>';
-      return;
-    }
-    list.innerHTML = jobs.map(j => `
-      <div class="job-card ${j.Status === 'Completed' ? 'completed' : ''}">
-        <div class="job-addr">${escapeHtml(j.Address || 'No address given')}</div>
-        <div class="job-detail">${escapeHtml([j.TireQty ? j.TireQty+'x' : '', j.TireSize, j.TireBrand].filter(Boolean).join(' '))}</div>
-        <div class="job-status" style="color:${j.Status === 'Completed' ? 'var(--success)' : 'var(--gold)'}">${escapeHtml(j.Status || '')}</div>
-      </div>
-    `).join('');
-  }catch(err){
-    list.innerHTML = '<div class="empty-state">Could not load jobs. Check your connection and try Refresh.</div>';
-  }
-}
-document.getElementById('refreshAllJobsBtn').addEventListener('click', loadAllJobs);
 
 /* ===== JSON backup / restore ===== */
 document.getElementById('exportJsonBtn').addEventListener('click', ()=>{
@@ -1332,6 +1953,8 @@ document.getElementById('importJsonInput').addEventListener('change', (e)=>{
 /* Init */
 load();
 setDefaultDate();
+addTireLine();
+addJobTypeRow();
 renderLog();
 renderSummary();
 </script>
