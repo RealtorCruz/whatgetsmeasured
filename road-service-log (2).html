@@ -1,0 +1,1426 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1" />
+<title>Road Service Log</title>
+<style>
+  :root{
+    --blue:#2E4DA6;
+    --blue-light:#4A68B8;
+    --gold:#E8B23C;
+    --rose:#C2577C;
+    --bg:#F7EDF2;
+    --border:#ECD9E3;
+    --text:#241F2E;
+    --muted:#7A6B78;
+    --faint:#A398A1;
+    --danger:#B5476B;
+    --success-bg:#E7F4EA;
+    --success-border:#B9DFC2;
+    --success-text:#2C6B3A;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--text);
+    font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Inter, sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  .header{
+    background:var(--blue);
+    color:#fff;
+    padding:24px 20px 20px;
+    position:sticky; top:0; z-index:10;
+    box-shadow:0 2px 8px rgba(0,0,0,0.15);
+  }
+  .header-row{display:flex; align-items:flex-start; justify-content:space-between;}
+  .brand h1{font-size:18px; font-weight:800; margin:0; letter-spacing:-0.01em;}
+  .brand-sub{font-size:12px; color:#C9D3ED; margin:3px 0 0;}
+  .stat-label{font-size:10px; color:#AAB8DE; text-transform:uppercase; letter-spacing:0.05em; text-align:right;}
+  .stat-value{font-size:22px; font-weight:700; color:var(--gold); text-align:right; line-height:1;}
+
+  .tabs{
+    display:flex; gap:4px; padding:12px 16px 4px;
+    background:var(--bg); position:sticky; top:80px; z-index:9;
+  }
+  .tab{
+    flex:1; font-size:13px; font-weight:600; padding:9px 0;
+    border-radius:8px; border:1px solid var(--border);
+    background:#fff; color:var(--muted); cursor:pointer;
+  }
+  .tab.active{background:var(--blue); color:#fff; border-color:var(--blue); box-shadow:0 1px 3px rgba(0,0,0,0.15);}
+
+  .content{padding:12px 16px 100px;}
+  .hidden{display:none !important;}
+
+  .card{
+    background:#fff; border:1px solid var(--border); border-radius:12px;
+    box-shadow:0 1px 2px rgba(0,0,0,0.04); padding:16px; margin-bottom:12px;
+  }
+
+  .section-label{
+    font-size:12px; font-weight:700; letter-spacing:0.04em; text-transform:uppercase;
+    color:var(--blue); margin:4px 0 10px;
+  }
+
+  .field{display:block; margin-bottom:12px;}
+  .field-label{
+    display:block; font-size:11px; font-weight:600; letter-spacing:0.06em;
+    text-transform:uppercase; color:var(--muted); margin-bottom:6px;
+  }
+  input, select{
+    width:100%; border:1px solid #E3CFDA; background:#fff; border-radius:8px;
+    padding:10px 12px; font-size:15px; color:var(--text);
+  }
+  input:focus, select:focus{outline:none; border-color:var(--blue-light); box-shadow:0 0 0 2px rgba(74,104,184,0.25);}
+  ::placeholder{color:#B9A7B2;}
+
+  .row2{display:grid; grid-template-columns:1fr 1fr; gap:0 12px;}
+  .miles-hint{font-size:12px; color:var(--blue-light); font-weight:600; margin:-6px 0 12px;}
+  .price-wrap{position:relative;}
+  .price-wrap .dollar{position:absolute; left:12px; top:50%; transform:translateY(-50%); color:var(--faint); font-size:15px;}
+  .price-wrap .percent-sign{position:absolute; right:12px; top:50%; transform:translateY(-50%); color:var(--faint); font-size:15px;}
+  .price-wrap input{padding-left:24px;}
+  .price-wrap.percent-mode .dollar{display:none;}
+  .price-wrap.percent-mode input{padding-left:12px; padding-right:26px;}
+  .discount-reason-row{display:flex; flex-wrap:wrap; gap:6px; margin:2px 0 10px;}
+  .discount-reason-btn{
+    flex:1 1 calc(50% - 6px); font-size:12.5px; font-weight:600; padding:8px 0; border-radius:7px;
+    border:1px solid var(--border); background:#fff; color:var(--muted); cursor:pointer;
+  }
+  .discount-reason-btn.active{background:var(--blue-light); color:#fff; border-color:var(--blue-light);}
+  .discount-reason-custom{margin:-4px 0 10px;}
+  .discount-type-row{display:flex; gap:8px; margin:-6px 0 10px;}
+  .discount-type-btn{
+    flex:1; font-size:12.5px; font-weight:600; padding:7px 0; border-radius:7px;
+    border:1px solid var(--border); background:#fff; color:var(--muted); cursor:pointer;
+  }
+  .discount-type-btn.active{background:var(--rose); color:#fff; border-color:var(--rose);}
+  .discount-line .name{font-style:italic;}
+  .discount-line .amt{color:var(--danger);}
+
+  .btn-primary{
+    width:100%; background:var(--gold); color:var(--blue); font-weight:700; font-size:15px;
+    border:none; border-radius:8px; padding:13px 0; cursor:pointer; margin-top:4px;
+  }
+  .btn-primary:disabled{opacity:0.6;}
+  .btn-secondary{
+    width:100%; background:#fff; color:var(--blue); font-weight:700; font-size:14px;
+    border:1.5px dashed var(--blue-light); border-radius:8px; padding:11px 0; cursor:pointer;
+  }
+  .error-msg{font-size:13px; color:var(--danger); font-weight:500; margin:-4px 0 12px;}
+  .toast{
+    border-radius:8px; background:var(--success-bg); border:1px solid var(--success-border);
+    color:var(--success-text); font-size:13px; font-weight:500; padding:8px 12px; margin-bottom:12px;
+  }
+
+  .empty{text-align:center; padding:64px 0;}
+  .empty p{color:var(--faint); font-size:14px; margin-bottom:12px;}
+  .empty .btn-primary{width:auto; padding:10px 20px;}
+
+  .service-row{
+    border:1px solid var(--border); border-radius:10px; padding:12px; margin-bottom:10px; background:#FDF9FB;
+    position:relative;
+  }
+  .service-row-top{display:flex; align-items:center; justify-content:space-between; margin-bottom:8px;}
+  .service-row-title{font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.05em; color:var(--blue-light);}
+  .service-remove{font-size:11px; color:var(--danger); font-weight:600; background:none; border:none; cursor:pointer; padding:0;}
+  .service-grid{display:grid; grid-template-columns:1.4fr 1fr; gap:0 10px;}
+  .running-total{
+    display:flex; justify-content:space-between; align-items:center;
+    background:#F7EDF2; border-radius:8px; padding:10px 14px; margin:2px 0 14px;
+    font-size:14px; font-weight:700; color:var(--blue);
+  }
+  .running-total span.amt{color:var(--rose); font-size:16px;}
+
+  .ticket{background:#fff; border:1px solid var(--border); border-radius:12px; overflow:hidden; box-shadow:0 1px 2px rgba(0,0,0,0.04); margin-bottom:12px;}
+  .ticket-inner{display:flex;}
+  .ticket-bar{width:6px; background:var(--rose); flex-shrink:0;}
+  .ticket-body{flex:1; padding:12px 16px;}
+  .ticket-top{display:flex; align-items:flex-start; justify-content:space-between;}
+  .ticket-vehicle{font-size:15px; font-weight:700; color:var(--text);}
+  .ticket-provider{font-size:12.5px; color:var(--muted); margin-top:2px;}
+  .ticket-price{font-size:16px; font-weight:700; color:var(--blue); text-align:right;}
+  .ticket-date{font-size:11px; color:var(--faint); text-align:right;}
+  .ticket-services{margin-top:10px; padding-top:10px; border-top:1px solid #F1E6EC;}
+  .ticket-service-line{display:flex; justify-content:space-between; font-size:13px; color:var(--text); padding:2px 0;}
+  .ticket-service-line .name{color:#4A3F49;}
+  .ticket-service-line .amt{font-weight:600; color:var(--rose);}
+  .ticket-meta{display:flex; flex-wrap:wrap; gap:0 16px; margin-top:8px; font-size:12.5px; color:var(--muted);}
+  .ticket-meta span.label{color:var(--faint);}
+  .ticket-bottom{margin-top:8px; padding-top:8px; border-top:1px solid #F1E6EC; display:flex; align-items:center; justify-content:space-between;}
+  .ticket-customer{font-size:12.5px; color:var(--text);}
+  .ticket-customer span{color:var(--faint);}
+  .delete-btn{font-size:11px; color:var(--danger); font-weight:600; background:none; border:none; cursor:pointer; padding:0; margin-left:8px; flex-shrink:0;}
+
+  .stat-grid{display:grid; grid-template-columns:1fr 1fr; gap:12px;}
+  .stat-card{background:#fff; border:1px solid var(--border); border-radius:12px; padding:16px; box-shadow:0 1px 2px rgba(0,0,0,0.04);}
+  .stat-card .k{font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--faint); font-weight:600;}
+  .stat-card .v{font-size:26px; font-weight:700; color:var(--blue); margin-top:4px;}
+  .stat-card .v.rose{color:var(--rose);}
+  .stat-card .v.small{font-size:20px;}
+
+  .breakdown-title{font-size:13px; font-weight:700; color:var(--text); margin-bottom:10px;}
+  .breakdown-row{display:flex; align-items:center; justify-content:space-between; padding:6px 0; border-bottom:1px solid #F1E6EC; font-size:13.5px;}
+  .breakdown-row:last-child{border-bottom:none;}
+  .breakdown-row .k{color:#4A3F49;}
+  .breakdown-row .v{font-weight:600; color:var(--blue);}
+  .no-data{font-size:13px; color:var(--faint);}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-row">
+    <div class="brand">
+      <h1>Road Service Log</h1>
+      <div class="brand-sub">Service Ticket Tracker</div>
+    </div>
+    <div>
+      <div class="stat-label">Calls Logged</div>
+      <div class="stat-value" id="headerCount">0</div>
+    </div>
+  </div>
+</div>
+
+<div class="tabs">
+  <button class="tab active" data-view="log" onclick="setView('log')">Log</button>
+  <button class="tab" data-view="new" onclick="setView('new')">+ New Ticket</button>
+  <button class="tab" data-view="allstatecalc" onclick="setView('allstatecalc')">Allstate Calc</button>
+  <button class="tab" data-view="summary" onclick="setView('summary')">Summary</button>
+</div>
+
+<div class="content">
+
+  <div id="toast" class="toast hidden">Ticket saved ✓</div>
+
+  <!-- LOG VIEW -->
+  <div id="view-log">
+    <div id="logList"></div>
+    <div id="emptyState" class="empty hidden">
+      <p>No jobs logged yet.</p>
+      <button class="btn-primary" onclick="setView('new')">Log your first job</button>
+    </div>
+  </div>
+
+  <!-- NEW TICKET VIEW -->
+  <div id="view-new" class="hidden">
+    <div class="card">
+      <div class="section-label">Call Details</div>
+
+      <label class="field">
+        <span class="field-label">Date</span>
+        <input type="date" id="callDate">
+      </label>
+
+      <label class="field">
+        <span class="field-label">Technician (optional)</span>
+        <select id="technician" onchange="toggleCustom('technician')">
+          <option value="">Select technician…</option>
+          <option>Dom</option>
+          <option>Abel</option>
+          <option value="__custom">Other…</option>
+        </select>
+      </label>
+      <label class="field hidden" id="technicianCustomWrap">
+        <span class="field-label">Custom Technician</span>
+        <input id="technicianCustom" placeholder="Technician name">
+      </label>
+
+      <div class="row2">
+        <label class="field">
+          <span class="field-label">Mileage Start (optional)</span>
+          <input type="number" inputmode="decimal" id="mileageStart" placeholder="e.g. 40210" oninput="updateMiles()">
+        </label>
+        <label class="field">
+          <span class="field-label">Mileage End (optional)</span>
+          <input type="number" inputmode="decimal" id="mileageEnd" placeholder="e.g. 40235" oninput="updateMiles()">
+        </label>
+      </div>
+      <div class="miles-hint hidden" id="milesHint"></div>
+
+      <label class="field">
+        <span class="field-label">Provider (optional)</span>
+        <select id="provider" onchange="toggleCustom('provider')">
+          <option value="">Select provider…</option>
+          <option>Allstate</option>
+          <option>Keep It Moving</option>
+          <option>Honk</option>
+          <option>Agero</option>
+          <option>Swoop</option>
+          <option>Urgently</option>
+          <option value="__custom">Other…</option>
+        </select>
+      </label>
+      <label class="field hidden" id="providerCustomWrap">
+        <span class="field-label">Custom Provider</span>
+        <input id="providerCustom" placeholder="Provider name">
+      </label>
+
+      <div class="row2">
+        <label class="field">
+          <span class="field-label">Vehicle Name (optional)</span>
+          <select id="vehicleNickname" onchange="toggleCustom('vehicleNickname')">
+            <option value="">Select vehicle name…</option>
+            <option>Luna</option>
+            <option>RU</option>
+            <option>Camry</option>
+            <option value="__custom">Other…</option>
+          </select>
+        </label>
+        <label class="field">
+          <span class="field-label">MPG (optional)</span>
+          <input type="number" inputmode="decimal" id="vehicleMpg" placeholder="e.g. 22">
+        </label>
+      </div>
+      <label class="field hidden" id="vehicleNicknameCustomWrap">
+        <span class="field-label">Custom Vehicle Name</span>
+        <input id="vehicleNicknameCustom" placeholder="Vehicle name">
+      </label>
+
+      <div class="row2">
+        <label class="field">
+          <span class="field-label">Year (optional)</span>
+          <input type="number" inputmode="numeric" id="vehicleYear" placeholder="e.g. 2019">
+        </label>
+        <label class="field">
+          <span class="field-label">Make (optional)</span>
+          <select id="vehicleMake" onchange="handleMakeChange()">
+            <option value="">Select make…</option>
+            <option value="__custom">Other…</option>
+          </select>
+        </label>
+      </div>
+      <label class="field hidden" id="makeCustomWrap">
+        <span class="field-label">Custom Make</span>
+        <input id="makeCustom" placeholder="Make name">
+      </label>
+
+      <label class="field" id="modelSelectWrap">
+        <span class="field-label">Model (optional)</span>
+        <select id="vehicleModel" disabled onchange="handleModelChange()">
+          <option value="">Select make first…</option>
+        </select>
+      </label>
+      <label class="field hidden" id="modelCustomWrapKnown">
+        <span class="field-label">Custom Model</span>
+        <input id="modelCustomKnown" placeholder="Model name">
+      </label>
+      <label class="field hidden" id="modelCustomWrapUnknown">
+        <span class="field-label">Model (optional)</span>
+        <input id="modelCustomUnknown" placeholder="Model name">
+      </label>
+      <input type="hidden" id="legacyVehicle" value="">
+
+      <div class="row2">
+        <label class="field">
+          <span class="field-label">First Name (optional)</span>
+          <input id="firstName">
+        </label>
+        <label class="field">
+          <span class="field-label">Last Name (optional)</span>
+          <input id="lastName">
+        </label>
+      </div>
+
+      <div class="row2">
+        <label class="field">
+          <span class="field-label">Customer Phone (optional)</span>
+          <input type="tel" id="phone" placeholder="(555) 123-4567">
+        </label>
+        <label class="field">
+          <span class="field-label">Customer Email (optional)</span>
+          <input type="email" id="email" placeholder="name@email.com">
+        </label>
+      </div>
+
+      <label class="field">
+        <span class="field-label">Payment Method (optional)</span>
+        <select id="paymentMethod" onchange="toggleCustom('paymentMethod')">
+          <option value="">Select payment method…</option>
+          <option>Cash</option>
+          <option>Zelle</option>
+          <option>Cash App</option>
+          <option>Card</option>
+          <optgroup label="Provider Invoice">
+            <option>Allstate</option>
+            <option>Keep It Moving</option>
+            <option>Honk</option>
+            <option>Agero</option>
+            <option>Swoop</option>
+            <option>Urgently</option>
+          </optgroup>
+          <option value="__custom">Other…</option>
+        </select>
+      </label>
+      <label class="field hidden" id="paymentMethodCustomWrap">
+        <span class="field-label">Custom Payment Method</span>
+        <input id="paymentMethodCustom" placeholder="Payment method">
+      </label>
+
+      <label class="field">
+        <span class="field-label">Notes (optional)</span>
+        <textarea id="notes" rows="3" placeholder="Anything worth remembering about this call…" style="width:100%; border:1px solid #E3CFDA; background:#fff; border-radius:8px; padding:10px 12px; font-size:15px; color:#241F2E; font-family:inherit; resize:vertical;"></textarea>
+      </label>
+    </div>
+
+    <div class="card">
+      <div class="section-label">Services Performed</div>
+      <div id="serviceRows"></div>
+      <button class="btn-secondary" onclick="addServiceRow()">+ Add Another Service</button>
+
+      <div class="running-total">
+        <span>Call Total</span>
+        <span class="amt" id="runningTotal">$0.00</span>
+      </div>
+
+      <div class="error-msg hidden" id="errorMsg"></div>
+
+      <button class="btn-primary" id="saveBtn" onclick="saveTicket()">Save Ticket</button>
+      <button class="btn-secondary hidden" id="cancelEditBtn" style="margin-top:8px;" onclick="cancelEdit()">Cancel Edit</button>
+    </div>
+  </div>
+
+  <!-- SUMMARY VIEW -->
+  <!-- ALLSTATE CALCULATOR VIEW (standalone, not saved with any ticket) -->
+  <div id="view-allstatecalc" class="hidden">
+    <div class="card">
+      <div class="section-label">Allstate Mileage Calculator</div>
+      <div style="font-size:12px; color:var(--muted); margin:-4px 0 12px;">
+        Quick calculator only — nothing here is saved to the log.
+      </div>
+      <div class="row2">
+        <label class="field">
+          <span class="field-label">Mileage (one-way)</span>
+          <input type="number" inputmode="decimal" id="calcMileage" placeholder="e.g. 12" oninput="updateStandaloneCalc()">
+        </label>
+        <label class="field">
+          <span class="field-label">MPG</span>
+          <input type="number" inputmode="decimal" id="calcMpg" placeholder="e.g. 6" oninput="updateStandaloneCalc()">
+        </label>
+      </div>
+      <div class="breakdown-row" style="padding:4px 0;">
+        <span class="k">Round Trip Miles (× 2)</span>
+        <span class="v" id="calcRoundTripResult">0.00</span>
+      </div>
+      <div class="breakdown-row" style="padding:4px 0;">
+        <span class="k">Gallons Used (÷ MPG)</span>
+        <span class="v" id="calcGallonsResult">0.00</span>
+      </div>
+      <label class="field" style="margin:8px 0 6px;">
+        <span class="field-label">Cost Per Mile ($)</span>
+        <div class="price-wrap">
+          <span class="dollar">$</span>
+          <input type="number" inputmode="decimal" id="calcCostPerMile" placeholder="0.00" oninput="updateStandaloneCalc()">
+        </div>
+      </label>
+      <div class="running-total" style="margin-top:2px; margin-bottom:12px;">
+        <span>Total</span>
+        <span class="amt" id="calcTotalResult">$0.00</span>
+      </div>
+      <button class="btn-secondary" onclick="clearStandaloneCalc()">Clear</button>
+    </div>
+  </div>
+
+  <div id="view-summary" class="hidden">
+    <button class="btn-primary" style="margin-bottom:8px;" onclick="exportCsv()">Export CSV</button>
+    <div style="display:flex; gap:8px; margin-bottom:12px;">
+      <button class="btn-secondary" style="margin-top:0;" onclick="exportBackup()">Backup Data</button>
+      <button class="btn-secondary" style="margin-top:0;" onclick="triggerImport()">Restore Data</button>
+    </div>
+    <input type="file" id="importFileInput" accept="application/json,.json" class="hidden" onchange="handleImportFile(event)">
+    <div class="stat-grid" style="margin-bottom:12px;">
+      <div class="stat-card">
+        <div class="k">Total Calls</div>
+        <div class="v" id="sumJobs">0</div>
+      </div>
+      <div class="stat-card">
+        <div class="k">Total Revenue</div>
+        <div class="v rose" id="sumRevenue">$0.00</div>
+      </div>
+      <div class="stat-card">
+        <div class="k">Avg Call</div>
+        <div class="v small" id="sumAvg">$0.00</div>
+      </div>
+      <div class="stat-card">
+        <div class="k">Total Miles</div>
+        <div class="v small" id="sumMiles">0.0</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="breakdown-title">By Quarter</div>
+      <div id="byQuarter" class="no-data">No data yet.</div>
+    </div>
+
+    <div class="card">
+      <div class="breakdown-title">By Month</div>
+      <div id="byMonth" class="no-data">No data yet.</div>
+    </div>
+
+    <div class="card">
+      <div class="breakdown-title">By Service Type</div>
+      <div id="byService" class="no-data">No data yet.</div>
+    </div>
+
+    <div class="card">
+      <div class="breakdown-title">By Provider</div>
+      <div id="byProvider" class="no-data">No data yet.</div>
+    </div>
+
+    <div class="card">
+      <div class="breakdown-title">By Technician</div>
+      <div id="byTechnician" class="no-data">No data yet.</div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  const STORAGE_KEY = 'road-service-log';
+  const SERVICE_OPTIONS = ["Tire Change", "Gas", "Lockout", "Boost", "Battery Replacement", "Tire Swap", "Discount"];
+  const MAKE_MODELS = {
+    "Toyota": ["Camry","Corolla","RAV4","Highlander","Tacoma","Tundra","4Runner","Sienna","Prius","Avalon","Venza","Sequoia"],
+    "Honda": ["Civic","Accord","CR-V","Pilot","Odyssey","HR-V","Ridgeline","Passport","Fit","Insight"],
+    "Ford": ["F-150","Escape","Explorer","Mustang","Edge","Expedition","Fusion","Ranger","Bronco","Focus","Transit"],
+    "Chevrolet": ["Silverado","Equinox","Malibu","Tahoe","Traverse","Suburban","Colorado","Camaro","Impala","Trax"],
+    "Nissan": ["Altima","Sentra","Rogue","Murano","Pathfinder","Frontier","Titan","Maxima","Versa","Kicks"],
+    "Jeep": ["Grand Cherokee","Wrangler","Cherokee","Compass","Renegade","Gladiator","Patriot"],
+    "Hyundai": ["Elantra","Sonata","Tucson","Santa Fe","Kona","Palisade","Accent","Venue"],
+    "Kia": ["Optima","Forte","Sportage","Sorento","Soul","Telluride","Rio","Seltos"],
+    "Dodge": ["Charger","Challenger","Durango","Journey","Grand Caravan"],
+    "Ram": ["1500","2500","3500","ProMaster"],
+    "GMC": ["Sierra","Terrain","Acadia","Yukon","Canyon"],
+    "BMW": ["3 Series","5 Series","X3","X5","X1","7 Series","4 Series"],
+    "Mercedes-Benz": ["C-Class","E-Class","GLC","GLE","S-Class","A-Class","GLA"],
+    "Volkswagen": ["Jetta","Passat","Tiguan","Atlas","Golf","Beetle"],
+    "Subaru": ["Outback","Forester","Crosstrek","Impreza","Legacy","Ascent","WRX"],
+    "Mazda": ["Mazda3","Mazda6","CX-5","CX-9","CX-30","MX-5 Miata"],
+    "Lexus": ["RX","ES","NX","GX","IS","LX"],
+    "Audi": ["A4","A6","Q5","Q7","A3","Q3"],
+    "Chrysler": ["300","Pacifica","Voyager"],
+    "Buick": ["Encore","Enclave","Envision","LaCrosse"],
+    "Cadillac": ["Escalade","XT5","CT5","XT4"],
+    "Lincoln": ["Navigator","Aviator","Corsair","Nautilus"],
+    "Acura": ["MDX","RDX","TLX","ILX"],
+    "Infiniti": ["Q50","QX60","QX80","QX50"],
+    "Volvo": ["XC90","XC60","S60","XC40"],
+    "Mitsubishi": ["Outlander","Eclipse Cross","Mirage"],
+    "Tesla": ["Model 3","Model Y","Model S","Model X"]
+  };
+  let entries = [];
+  let serviceRowCount = 0;
+  let editingId = null;
+
+  function migrateEntry(e){
+    if(e.services) return e;
+    return {
+      ...e,
+      services: [{ service: e.service, price: e.price }],
+      totalPrice: e.price
+    };
+  }
+
+  function sortEntries(){
+    entries.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+  }
+
+  function loadEntries(){
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      entries = raw ? JSON.parse(raw) : [];
+      entries = entries.map(migrateEntry);
+      sortEntries();
+    } catch(e){ entries = []; }
+  }
+  function persist(){
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
+  }
+
+  function setView(v){
+    if(v !== 'new' && editingId){
+      editingId = null;
+      document.getElementById('saveBtn').textContent = 'Save Ticket';
+      document.getElementById('cancelEditBtn').classList.add('hidden');
+    }
+    ['log','new','allstatecalc','summary'].forEach(name => {
+      document.getElementById('view-' + name).classList.toggle('hidden', name !== v);
+      document.querySelector('.tab[data-view="' + name + '"]').classList.toggle('active', name === v);
+    });
+    if(v === 'log') renderLog();
+    if(v === 'summary') renderSummary();
+    if(v === 'new' && document.getElementById('serviceRows').children.length === 0){
+      addServiceRow();
+    }
+  }
+
+  function toggleCustom(which){
+    const val = document.getElementById(which).value;
+    document.getElementById(which + 'CustomWrap').classList.toggle('hidden', val !== '__custom');
+  }
+
+  function updateStandaloneCalc(){
+    const mileage = parseFloat(document.getElementById('calcMileage').value) || 0;
+    const mpg = parseFloat(document.getElementById('calcMpg').value) || 0;
+    const costPerMile = parseFloat(document.getElementById('calcCostPerMile').value) || 0;
+    const roundTrip = mileage * 2;
+    const gallons = mpg > 0 ? roundTrip / mpg : 0;
+    const total = gallons * costPerMile;
+    document.getElementById('calcRoundTripResult').textContent = roundTrip.toFixed(2);
+    document.getElementById('calcGallonsResult').textContent = gallons.toFixed(2);
+    document.getElementById('calcTotalResult').textContent = fmtMoney(total);
+  }
+
+  function clearStandaloneCalc(){
+    document.getElementById('calcMileage').value = '';
+    document.getElementById('calcMpg').value = '';
+    document.getElementById('calcCostPerMile').value = '';
+    updateStandaloneCalc();
+  }
+
+  function populateMakeOptions(){
+    const makeSelect = document.getElementById('vehicleMake');
+    const makes = Object.keys(MAKE_MODELS).sort();
+    const optionsHtml = makes.map(m => `<option>${m}</option>`).join('');
+    makeSelect.innerHTML = '<option value="">Select make…</option>' + optionsHtml + '<option value="__custom">Other…</option>';
+  }
+
+  function handleMakeChange(){
+    const makeSel = document.getElementById('vehicleMake').value;
+    const makeCustomWrap = document.getElementById('makeCustomWrap');
+    const modelSelectWrap = document.getElementById('modelSelectWrap');
+    const modelCustomWrapUnknown = document.getElementById('modelCustomWrapUnknown');
+    const modelCustomWrapKnown = document.getElementById('modelCustomWrapKnown');
+    const modelSelect = document.getElementById('vehicleModel');
+
+    modelCustomWrapKnown.classList.add('hidden');
+    document.getElementById('modelCustomKnown').value = '';
+
+    if(makeSel === '__custom'){
+      makeCustomWrap.classList.remove('hidden');
+      modelSelectWrap.classList.add('hidden');
+      modelCustomWrapUnknown.classList.remove('hidden');
+    } else if(makeSel && MAKE_MODELS[makeSel]){
+      makeCustomWrap.classList.add('hidden');
+      document.getElementById('makeCustom').value = '';
+      modelSelectWrap.classList.remove('hidden');
+      modelCustomWrapUnknown.classList.add('hidden');
+      document.getElementById('modelCustomUnknown').value = '';
+      modelSelect.disabled = false;
+      modelSelect.innerHTML = '<option value="">Select model…</option>'
+        + MAKE_MODELS[makeSel].map(m => `<option>${m}</option>`).join('')
+        + '<option value="__custom">Other…</option>';
+      modelSelect.value = '';
+    } else {
+      makeCustomWrap.classList.add('hidden');
+      document.getElementById('makeCustom').value = '';
+      modelSelectWrap.classList.remove('hidden');
+      modelCustomWrapUnknown.classList.add('hidden');
+      modelSelect.disabled = true;
+      modelSelect.innerHTML = '<option value="">Select make first…</option>';
+    }
+  }
+
+  function handleModelChange(){
+    const modelSel = document.getElementById('vehicleModel').value;
+    document.getElementById('modelCustomWrapKnown').classList.toggle('hidden', modelSel !== '__custom');
+  }
+
+  function getVehicleFormData(){
+    const nicknameSel = document.getElementById('vehicleNickname').value;
+    const nicknameCustom = document.getElementById('vehicleNicknameCustom').value.trim();
+    const nickname = nicknameSel === '__custom' ? nicknameCustom : nicknameSel;
+
+    const year = document.getElementById('vehicleYear').value.trim();
+    const makeSel = document.getElementById('vehicleMake').value;
+    const makeCustom = document.getElementById('makeCustom').value.trim();
+    const make = makeSel === '__custom' ? makeCustom : makeSel;
+
+    let model = '';
+    if(makeSel === '__custom'){
+      model = document.getElementById('modelCustomUnknown').value.trim();
+    } else if(makeSel){
+      const modelSel = document.getElementById('vehicleModel').value;
+      model = modelSel === '__custom' ? document.getElementById('modelCustomKnown').value.trim() : modelSel;
+    }
+
+    const details = [year, make, model].filter(Boolean).join(' ');
+    let display;
+    if(nickname && details){
+      display = `${nickname} (${details})`;
+    } else if(nickname){
+      display = nickname;
+    } else {
+      display = details;
+    }
+    if(!display){
+      display = document.getElementById('legacyVehicle').value.trim();
+    }
+    return { nickname, year, make, model, display };
+  }
+
+  function todayDateString(){
+    const d = new Date();
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+  }
+
+  function resetCallDate(){
+    document.getElementById('callDate').value = todayDateString();
+  }
+
+  function composeDateISO(dateStr){
+    const val = dateStr && dateStr.trim() ? dateStr : todayDateString();
+    return new Date(val + 'T12:00:00').toISOString();
+  }
+
+  function resetVehicleFields(){
+    document.getElementById('vehicleNickname').value = '';
+    document.getElementById('vehicleNicknameCustom').value = '';
+    document.getElementById('vehicleNicknameCustomWrap').classList.add('hidden');
+    document.getElementById('vehicleMpg').value = '';
+    document.getElementById('vehicleYear').value = '';
+    document.getElementById('vehicleMake').value = '';
+    document.getElementById('makeCustom').value = '';
+    document.getElementById('makeCustomWrap').classList.add('hidden');
+    document.getElementById('modelCustomUnknown').value = '';
+    document.getElementById('modelCustomWrapUnknown').classList.add('hidden');
+    document.getElementById('modelCustomKnown').value = '';
+    document.getElementById('modelCustomWrapKnown').classList.add('hidden');
+    document.getElementById('legacyVehicle').value = '';
+    const modelSelect = document.getElementById('vehicleModel');
+    modelSelect.disabled = true;
+    modelSelect.innerHTML = '<option value="">Select make first…</option>';
+    document.getElementById('modelSelectWrap').classList.remove('hidden');
+  }
+
+  function updateMiles(){
+    const s = parseFloat(document.getElementById('mileageStart').value);
+    const e = parseFloat(document.getElementById('mileageEnd').value);
+    const hint = document.getElementById('milesHint');
+    if(!isNaN(s) && !isNaN(e) && e >= s){
+      hint.textContent = (e - s).toFixed(1) + ' miles driven';
+      hint.classList.remove('hidden');
+    } else {
+      hint.classList.add('hidden');
+    }
+  }
+
+  function uid(){ return Date.now() + '-' + Math.random().toString(36).slice(2,8); }
+
+  function addServiceRow(){
+    serviceRowCount++;
+    const rowId = 'svc-' + serviceRowCount;
+    const wrap = document.createElement('div');
+    wrap.className = 'service-row';
+    wrap.id = rowId;
+    wrap.dataset.discountType = 'flat';
+    wrap.dataset.discountReason = 'Student';
+    wrap.innerHTML = `
+      <div class="service-row-top">
+        <span class="service-row-title">Service ${document.getElementById('serviceRows').children.length + 1}</span>
+        <button type="button" class="service-remove" onclick="removeServiceRow('${rowId}')">Remove</button>
+      </div>
+      <div class="service-grid">
+        <label class="field" style="margin-bottom:8px;">
+          <select class="svc-select" onchange="handleServiceChange('${rowId}')">
+            <option value="">Select service…</option>
+            ${SERVICE_OPTIONS.map(s => `<option>${s}</option>`).join('')}
+          </select>
+        </label>
+        <label class="field" style="margin-bottom:8px;">
+          <div class="price-wrap">
+            <span class="dollar">$</span>
+            <span class="percent-sign hidden">%</span>
+            <input type="number" inputmode="decimal" class="svc-price" placeholder="0.00" oninput="updateRunningTotal()">
+          </div>
+        </label>
+      </div>
+      <div class="discount-reason-row hidden">
+        <button type="button" class="discount-reason-btn active" data-reason="Student" onclick="setDiscountReason('${rowId}','Student')">Student</button>
+        <button type="button" class="discount-reason-btn" data-reason="Military" onclick="setDiscountReason('${rowId}','Military')">Military</button>
+        <button type="button" class="discount-reason-btn" data-reason="AAA" onclick="setDiscountReason('${rowId}','AAA')">AAA</button>
+        <button type="button" class="discount-reason-btn" data-reason="Other" onclick="setDiscountReason('${rowId}','Other')">Other</button>
+      </div>
+      <input class="discount-reason-custom hidden" placeholder="Discount label (e.g. Employee, Coupon)">
+      <div class="discount-type-row hidden">
+        <button type="button" class="discount-type-btn active" data-type="flat" onclick="setDiscountType('${rowId}','flat')">$ Off</button>
+        <button type="button" class="discount-type-btn" data-type="percent" onclick="setDiscountType('${rowId}','percent')">% Off</button>
+      </div>
+    `;
+    document.getElementById('serviceRows').appendChild(wrap);
+    updateRunningTotal();
+  }
+
+  function handleServiceChange(rowId){
+    const row = document.getElementById(rowId);
+    const isDiscount = row.querySelector('.svc-select').value === 'Discount';
+    row.querySelector('.discount-type-row').classList.toggle('hidden', !isDiscount);
+    row.querySelector('.discount-reason-row').classList.toggle('hidden', !isDiscount);
+    if(!isDiscount){
+      row.dataset.discountType = 'flat';
+      row.dataset.discountReason = 'Student';
+      applyPriceMode(row, 'flat');
+      row.querySelector('.discount-reason-custom').classList.add('hidden');
+      row.querySelectorAll('.discount-type-btn').forEach(b => b.classList.toggle('active', b.dataset.type === 'flat'));
+      row.querySelectorAll('.discount-reason-btn').forEach(b => b.classList.toggle('active', b.dataset.reason === 'Student'));
+    } else {
+      applyPriceMode(row, row.dataset.discountType || 'flat');
+      row.querySelector('.discount-reason-custom').classList.toggle('hidden', row.dataset.discountReason !== 'Other');
+    }
+    updateRunningTotal();
+  }
+
+  function setDiscountReason(rowId, reason){
+    const row = document.getElementById(rowId);
+    row.dataset.discountReason = reason;
+    row.querySelectorAll('.discount-reason-btn').forEach(b => b.classList.toggle('active', b.dataset.reason === reason));
+    row.querySelector('.discount-reason-custom').classList.toggle('hidden', reason !== 'Other');
+  }
+
+  function setDiscountType(rowId, type){
+    const row = document.getElementById(rowId);
+    row.dataset.discountType = type;
+    row.querySelectorAll('.discount-type-btn').forEach(b => b.classList.toggle('active', b.dataset.type === type));
+    applyPriceMode(row, type);
+    updateRunningTotal();
+  }
+
+  function applyPriceMode(row, type){
+    const wrap = row.querySelector('.price-wrap');
+    const input = row.querySelector('.svc-price');
+    if(type === 'percent'){
+      wrap.classList.add('percent-mode');
+      input.placeholder = 'e.g. 10';
+    } else {
+      wrap.classList.remove('percent-mode');
+      input.placeholder = '0.00';
+    }
+  }
+
+  function removeServiceRow(rowId){
+    const row = document.getElementById(rowId);
+    if(row) row.remove();
+    renumberServiceRows();
+    updateRunningTotal();
+  }
+
+  function renumberServiceRows(){
+    const rows = document.querySelectorAll('#serviceRows .service-row');
+    rows.forEach((row, i) => {
+      row.querySelector('.service-row-title').textContent = 'Service ' + (i + 1);
+    });
+  }
+
+  function computeServiceTotal(){
+    const rows = document.querySelectorAll('#serviceRows .service-row');
+    let total = 0;
+    rows.forEach(row => {
+      const service = row.querySelector('.svc-select').value;
+      const raw = parseFloat(row.querySelector('.svc-price').value) || 0;
+      if(service === 'Discount'){
+        const type = row.dataset.discountType || 'flat';
+        const amount = type === 'percent' ? total * (raw / 100) : raw;
+        total -= amount;
+      } else {
+        total += raw;
+      }
+    });
+    return total;
+  }
+
+  function updateRunningTotal(){
+    const total = Math.max(0, computeServiceTotal());
+    document.getElementById('runningTotal').textContent = fmtMoney(total);
+  }
+
+  function collectServices(){
+    const rows = document.querySelectorAll('#serviceRows .service-row');
+    const services = [];
+    let valid = true;
+    let subtotal = 0;
+    rows.forEach(row => {
+      const service = row.querySelector('.svc-select').value;
+      const priceValRaw = row.querySelector('.svc-price').value;
+      if(!service || priceValRaw === ''){ valid = false; return; }
+      const raw = parseFloat(priceValRaw);
+      if(service === 'Discount'){
+        const type = row.dataset.discountType || 'flat';
+        const reason = row.dataset.discountReason || 'Student';
+        const customLabel = row.querySelector('.discount-reason-custom').value.trim();
+        const reasonLabel = reason === 'Other' ? (customLabel || 'Other') : reason;
+        const amount = type === 'percent' ? subtotal * (raw / 100) : raw;
+        subtotal -= amount;
+        services.push({ service: 'Discount', price: -amount, discountType: type, discountValue: raw, discountReason: reasonLabel });
+      } else {
+        subtotal += raw;
+        services.push({ service: service, price: raw });
+      }
+    });
+    return { services, valid: valid && services.length > 0 };
+  }
+
+  function saveTicket(){
+    const mileageStart = document.getElementById('mileageStart').value;
+    const mileageEnd = document.getElementById('mileageEnd').value;
+    const technicianSel = document.getElementById('technician').value;
+    const technicianCustom = document.getElementById('technicianCustom').value.trim();
+    const technician = technicianSel === '__custom' ? technicianCustom : technicianSel;
+    const providerSel = document.getElementById('provider').value;
+    const providerCustom = document.getElementById('providerCustom').value.trim();
+    const veh = getVehicleFormData();
+    const vehicleMpgRaw = document.getElementById('vehicleMpg').value;
+    const vehicleMpg = vehicleMpgRaw !== '' ? parseFloat(vehicleMpgRaw) : null;
+    const firstName = document.getElementById('firstName').value.trim();
+    const lastName = document.getElementById('lastName').value.trim();
+    const phone = document.getElementById('phone').value.trim();
+    const email = document.getElementById('email').value.trim();
+    const provider = providerSel === '__custom' ? providerCustom : providerSel;
+    const paymentMethodSel = document.getElementById('paymentMethod').value;
+    const paymentMethodCustom = document.getElementById('paymentMethodCustom').value.trim();
+    const paymentMethod = paymentMethodSel === '__custom' ? paymentMethodCustom : paymentMethodSel;
+    const notes = document.getElementById('notes').value.trim();
+
+    const { services, valid } = collectServices();
+
+    const errBox = document.getElementById('errorMsg');
+    if(!valid){
+      errBox.textContent = 'Log at least one service with a type and price.';
+      errBox.classList.remove('hidden');
+      return;
+    }
+    errBox.classList.add('hidden');
+
+    const s = parseFloat(mileageStart), e = parseFloat(mileageEnd);
+    const miles = (!isNaN(s) && !isNaN(e) && e >= s) ? (e - s).toFixed(1) : null;
+    const totalPrice = services.reduce((sum, sv) => sum + sv.price, 0);
+
+    const wasEditing = !!editingId;
+    const existing = wasEditing ? entries.find(en => en.id === editingId) : null;
+
+    const ticketData = {
+      id: wasEditing ? editingId : uid(),
+      createdAt: composeDateISO(document.getElementById('callDate').value),
+      updatedAt: wasEditing ? new Date().toISOString() : undefined,
+      mileageStart: s,
+      mileageEnd: e,
+      miles: miles,
+      provider: provider,
+      vehicle: veh.display,
+      vehicleNickname: veh.nickname,
+      vehicleMpg: vehicleMpg,
+      vehicleYear: veh.year,
+      vehicleMake: veh.make,
+      vehicleModel: veh.model,
+      services: services,
+      totalPrice: totalPrice,
+      customer: (firstName + ' ' + lastName).trim(),
+      phone: phone,
+      email: email,
+      paymentMethod: paymentMethod,
+      technician: technician,
+      notes: notes
+    };
+
+    if(wasEditing){
+      const idx = entries.findIndex(en => en.id === editingId);
+      if(idx !== -1) entries[idx] = ticketData; else entries.unshift(ticketData);
+    } else {
+      entries.unshift(ticketData);
+    }
+    sortEntries();
+    persist();
+
+    // reset form
+    ['mileageStart','mileageEnd','providerCustom','firstName','lastName','phone','email','paymentMethodCustom','notes','technicianCustom']
+      .forEach(id => document.getElementById(id).value = '');
+    document.getElementById('provider').value = '';
+    document.getElementById('providerCustomWrap').classList.add('hidden');
+    document.getElementById('milesHint').classList.add('hidden');
+    document.getElementById('paymentMethod').value = '';
+    document.getElementById('paymentMethodCustomWrap').classList.add('hidden');
+    document.getElementById('technician').value = '';
+    document.getElementById('technicianCustomWrap').classList.add('hidden');
+    resetVehicleFields();
+    resetCallDate();
+    document.getElementById('serviceRows').innerHTML = '';
+    serviceRowCount = 0;
+    addServiceRow();
+
+    editingId = null;
+    document.getElementById('saveBtn').textContent = 'Save Ticket';
+    document.getElementById('cancelEditBtn').classList.add('hidden');
+
+    updateHeaderCount();
+    setView('log');
+    showToast(wasEditing ? 'Ticket updated ✓' : 'Ticket saved ✓');
+  }
+
+  function startEdit(id){
+    const entry = entries.find(en => en.id === id);
+    if(!entry) return;
+    editingId = id;
+
+    document.getElementById('callDate').value = entry.createdAt
+      ? new Date(entry.createdAt).toISOString().slice(0, 10)
+      : todayDateString();
+
+    document.getElementById('mileageStart').value = entry.mileageStart ?? '';
+    document.getElementById('mileageEnd').value = entry.mileageEnd ?? '';
+    updateMiles();
+
+    const technicianSelect = document.getElementById('technician');
+    const knownTechs = Array.from(technicianSelect.options).map(o => o.value).filter(v => v && v !== '__custom');
+    document.getElementById('technicianCustom').value = '';
+    if(entry.technician && knownTechs.includes(entry.technician)){
+      technicianSelect.value = entry.technician;
+      document.getElementById('technicianCustomWrap').classList.add('hidden');
+    } else if(entry.technician){
+      technicianSelect.value = '__custom';
+      document.getElementById('technicianCustomWrap').classList.remove('hidden');
+      document.getElementById('technicianCustom').value = entry.technician;
+    } else {
+      technicianSelect.value = '';
+      document.getElementById('technicianCustomWrap').classList.add('hidden');
+    }
+
+    const providerSelect = document.getElementById('provider');
+    const knownProviders = Array.from(providerSelect.options).map(o => o.value).filter(v => v && v !== '__custom');
+    document.getElementById('providerCustom').value = '';
+    if(entry.provider && knownProviders.includes(entry.provider)){
+      providerSelect.value = entry.provider;
+      document.getElementById('providerCustomWrap').classList.add('hidden');
+    } else if(entry.provider){
+      providerSelect.value = '__custom';
+      document.getElementById('providerCustomWrap').classList.remove('hidden');
+      document.getElementById('providerCustom').value = entry.provider;
+    } else {
+      providerSelect.value = '';
+      document.getElementById('providerCustomWrap').classList.add('hidden');
+    }
+
+    resetVehicleFields();
+    const nicknameSelect = document.getElementById('vehicleNickname');
+    const knownNicknames = Array.from(nicknameSelect.options).map(o => o.value).filter(v => v && v !== '__custom');
+    if(entry.vehicleNickname && knownNicknames.includes(entry.vehicleNickname)){
+      nicknameSelect.value = entry.vehicleNickname;
+      document.getElementById('vehicleNicknameCustomWrap').classList.add('hidden');
+    } else if(entry.vehicleNickname){
+      nicknameSelect.value = '__custom';
+      document.getElementById('vehicleNicknameCustomWrap').classList.remove('hidden');
+      document.getElementById('vehicleNicknameCustom').value = entry.vehicleNickname;
+    }
+    document.getElementById('vehicleMpg').value = entry.vehicleMpg != null ? entry.vehicleMpg : '';
+    document.getElementById('vehicleYear').value = entry.vehicleYear || '';
+    document.getElementById('legacyVehicle').value = entry.vehicle || '';
+    if(entry.vehicleMake && MAKE_MODELS[entry.vehicleMake]){
+      document.getElementById('vehicleMake').value = entry.vehicleMake;
+      handleMakeChange();
+      const modelSelect = document.getElementById('vehicleModel');
+      const knownModels = MAKE_MODELS[entry.vehicleMake];
+      if(entry.vehicleModel && knownModels.includes(entry.vehicleModel)){
+        modelSelect.value = entry.vehicleModel;
+      } else if(entry.vehicleModel){
+        modelSelect.value = '__custom';
+        handleModelChange();
+        document.getElementById('modelCustomKnown').value = entry.vehicleModel;
+      }
+    } else if(entry.vehicleMake){
+      document.getElementById('vehicleMake').value = '__custom';
+      handleMakeChange();
+      document.getElementById('makeCustom').value = entry.vehicleMake;
+      document.getElementById('modelCustomUnknown').value = entry.vehicleModel || '';
+    }
+
+    const nameParts = (entry.customer || '').trim().split(' ');
+    document.getElementById('firstName').value = nameParts[0] || '';
+    document.getElementById('lastName').value = nameParts.slice(1).join(' ') || '';
+    document.getElementById('phone').value = entry.phone || '';
+    document.getElementById('email').value = entry.email || '';
+
+    const paymentSelect = document.getElementById('paymentMethod');
+    const knownPayments = Array.from(paymentSelect.options).map(o => o.value).filter(v => v && v !== '__custom');
+    document.getElementById('paymentMethodCustom').value = '';
+    if(entry.paymentMethod && knownPayments.includes(entry.paymentMethod)){
+      paymentSelect.value = entry.paymentMethod;
+      document.getElementById('paymentMethodCustomWrap').classList.add('hidden');
+    } else if(entry.paymentMethod){
+      paymentSelect.value = '__custom';
+      document.getElementById('paymentMethodCustomWrap').classList.remove('hidden');
+      document.getElementById('paymentMethodCustom').value = entry.paymentMethod;
+    } else {
+      paymentSelect.value = '';
+      document.getElementById('paymentMethodCustomWrap').classList.add('hidden');
+    }
+    document.getElementById('notes').value = entry.notes || '';
+
+    document.getElementById('serviceRows').innerHTML = '';
+    serviceRowCount = 0;
+    const services = entry.services && entry.services.length ? entry.services : [{ service: '', price: '' }];
+    services.forEach(sv => {
+      addServiceRow();
+      const rowId = 'svc-' + serviceRowCount;
+      populateServiceRow(rowId, sv);
+    });
+
+    updateRunningTotal();
+    document.getElementById('saveBtn').textContent = 'Update Ticket';
+    document.getElementById('cancelEditBtn').classList.remove('hidden');
+    document.getElementById('errorMsg').classList.add('hidden');
+    setView('new');
+  }
+
+  function populateServiceRow(rowId, sv){
+    const row = document.getElementById(rowId);
+    const select = row.querySelector('.svc-select');
+    const priceInput = row.querySelector('.svc-price');
+    select.value = sv.service || '';
+
+    if(sv.service === 'Discount'){
+      const presetReasons = ['Student','Military','AAA'];
+      const reason = presetReasons.includes(sv.discountReason) ? sv.discountReason : 'Other';
+      row.dataset.discountType = sv.discountType || 'flat';
+      row.dataset.discountReason = reason;
+      priceInput.value = sv.discountValue != null ? sv.discountValue : '';
+
+      row.querySelector('.discount-type-row').classList.remove('hidden');
+      row.querySelector('.discount-reason-row').classList.remove('hidden');
+      row.querySelectorAll('.discount-type-btn').forEach(b => b.classList.toggle('active', b.dataset.type === row.dataset.discountType));
+      row.querySelectorAll('.discount-reason-btn').forEach(b => b.classList.toggle('active', b.dataset.reason === reason));
+      applyPriceMode(row, row.dataset.discountType);
+
+      const customInput = row.querySelector('.discount-reason-custom');
+      if(reason === 'Other'){
+        customInput.classList.remove('hidden');
+        customInput.value = sv.discountReason || '';
+      } else {
+        customInput.classList.add('hidden');
+        customInput.value = '';
+      }
+    } else {
+      priceInput.value = sv.price != null ? sv.price : '';
+    }
+  }
+
+  function cancelEdit(){
+    editingId = null;
+    document.getElementById('saveBtn').textContent = 'Save Ticket';
+    document.getElementById('cancelEditBtn').classList.add('hidden');
+    ['mileageStart','mileageEnd','providerCustom','firstName','lastName','phone','email','paymentMethodCustom','notes','technicianCustom']
+      .forEach(id => document.getElementById(id).value = '');
+    document.getElementById('provider').value = '';
+    document.getElementById('providerCustomWrap').classList.add('hidden');
+    document.getElementById('milesHint').classList.add('hidden');
+    document.getElementById('paymentMethod').value = '';
+    document.getElementById('paymentMethodCustomWrap').classList.add('hidden');
+    document.getElementById('technician').value = '';
+    document.getElementById('technicianCustomWrap').classList.add('hidden');
+    document.getElementById('errorMsg').classList.add('hidden');
+    resetVehicleFields();
+    resetCallDate();
+    document.getElementById('serviceRows').innerHTML = '';
+    serviceRowCount = 0;
+    addServiceRow();
+    setView('log');
+  }
+
+  function showToast(message){
+    const t = document.getElementById('toast');
+    t.textContent = message || 'Ticket saved ✓';
+    t.classList.remove('hidden');
+    setTimeout(() => t.classList.add('hidden'), 2500);
+  }
+
+  function confirmDelete(id){
+    if(confirm('Delete this ticket? This can\'t be undone.')){
+      deleteEntry(id);
+    }
+  }
+
+  function deleteEntry(id){
+    entries = entries.filter(e => e.id !== id);
+    persist();
+    renderLog();
+    updateHeaderCount();
+  }
+
+  function fmtMoney(n){ return '$' + n.toFixed(2); }
+  function fmtDate(iso){
+    const d = new Date(iso);
+    return d.toLocaleDateString(undefined, { month:'short', day:'numeric', year:'numeric' });
+  }
+
+  function renderLog(){
+    const list = document.getElementById('logList');
+    const empty = document.getElementById('emptyState');
+    if(entries.length === 0){
+      list.innerHTML = '';
+      empty.classList.remove('hidden');
+      return;
+    }
+    empty.classList.add('hidden');
+    list.innerHTML = entries.map(e => {
+      const contactBits = [e.phone, e.email].filter(Boolean).join(' · ');
+      const customerLine = e.customer && e.customer.trim() !== ''
+        ? `${escapeHtml(e.customer)}${contactBits ? ' <span>· ' + escapeHtml(contactBits) + '</span>' : ''}`
+        : (contactBits ? `<span>${escapeHtml(contactBits)}</span>` : '<span>No customer info on file</span>');
+      return `
+      <div class="ticket">
+        <div class="ticket-inner">
+          <div class="ticket-bar"></div>
+          <div class="ticket-body">
+            <div class="ticket-top">
+              <div>
+                <div class="ticket-vehicle">${e.vehicle ? escapeHtml(e.vehicle) : 'Vehicle not noted'}</div>
+                <div class="ticket-provider">${e.provider ? escapeHtml(e.provider) : ''}</div>
+              </div>
+              <div>
+                <div class="ticket-price">${fmtMoney(e.totalPrice)}</div>
+                <div class="ticket-date">${fmtDate(e.createdAt)}</div>
+              </div>
+            </div>
+            <div class="ticket-services">
+              ${e.services.map(sv => {
+                const isDiscount = sv.service === 'Discount';
+                const label = isDiscount
+                  ? `${sv.discountReason || 'Discount'} (${sv.discountType === 'percent' ? sv.discountValue + '% off' : fmtMoney(sv.discountValue) + ' off'})`
+                  : sv.service;
+                const amtDisplay = isDiscount ? '−' + fmtMoney(Math.abs(sv.price)) : fmtMoney(sv.price);
+                return `
+                <div class="ticket-service-line ${isDiscount ? 'discount-line' : ''}">
+                  <span class="name">${escapeHtml(label)}</span>
+                  <span class="amt">${amtDisplay}</span>
+                </div>`;
+              }).join('')}
+            </div>
+            ${(e.miles || e.paymentMethod || e.technician) ? `
+            <div class="ticket-meta">
+              ${e.technician ? `<span><span class="label">Tech</span> ${escapeHtml(e.technician)}</span>` : ''}
+              ${e.miles ? `<span><span class="label">Miles</span> ${e.miles}</span>` : ''}
+              ${e.paymentMethod ? `<span><span class="label">Paid via</span> ${escapeHtml(e.paymentMethod)}</span>` : ''}
+            </div>` : ''}
+            ${e.notes ? `<div style="font-size:12.5px; color:var(--muted); font-style:italic; margin-top:6px;">${escapeHtml(e.notes)}</div>` : ''}
+            <div class="ticket-bottom">
+              <div class="ticket-customer">${customerLine}</div>
+              <div style="display:flex; gap:14px; flex-shrink:0;">
+                <button class="delete-btn" style="color:var(--blue-light);" onclick="startEdit('${e.id}')">Edit</button>
+                <button class="delete-btn" onclick="confirmDelete('${e.id}')">Delete</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+    }).join('');
+  }
+
+  function escapeHtml(str){
+    const d = document.createElement('div');
+    d.textContent = str == null ? '' : str;
+    return d.innerHTML;
+  }
+
+  function renderSummary(){
+    const jobs = entries.length;
+    const revenue = entries.reduce((sum, e) => sum + (e.totalPrice || 0), 0);
+    const miles = entries.reduce((sum, e) => sum + (parseFloat(e.miles) || 0), 0);
+    const avg = jobs ? revenue / jobs : 0;
+
+    document.getElementById('sumJobs').textContent = jobs;
+    document.getElementById('sumRevenue').textContent = fmtMoney(revenue);
+    document.getElementById('sumAvg').textContent = fmtMoney(avg);
+    document.getElementById('sumMiles').textContent = miles.toFixed(1);
+
+    const byService = {}, byProvider = {}, byTechnician = {};
+    const byMonth = {}, byQuarter = {};
+    entries.forEach(e => {
+      (e.services || []).forEach(sv => {
+        byService[sv.service] = (byService[sv.service] || 0) + 1;
+      });
+      byProvider[e.provider] = (byProvider[e.provider] || 0) + 1;
+      if(e.technician) byTechnician[e.technician] = (byTechnician[e.technician] || 0) + 1;
+
+      const d = new Date(e.createdAt);
+      if(!isNaN(d)){
+        const mKey = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+        const mLabel = d.toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
+        if(!byMonth[mKey]) byMonth[mKey] = { label: mLabel, count: 0, revenue: 0 };
+        byMonth[mKey].count++;
+        byMonth[mKey].revenue += (e.totalPrice || 0);
+
+        const q = Math.floor(d.getMonth() / 3) + 1;
+        const qKey = d.getFullYear() + '-Q' + q;
+        const qLabel = 'Q' + q + ' ' + d.getFullYear();
+        if(!byQuarter[qKey]) byQuarter[qKey] = { label: qLabel, count: 0, revenue: 0 };
+        byQuarter[qKey].count++;
+        byQuarter[qKey].revenue += (e.totalPrice || 0);
+      }
+    });
+
+    document.getElementById('byService').innerHTML = renderBreakdown(byService);
+    document.getElementById('byProvider').innerHTML = renderBreakdown(byProvider);
+    document.getElementById('byTechnician').innerHTML = renderBreakdown(byTechnician);
+    document.getElementById('byMonth').innerHTML = renderTimeBreakdown(byMonth);
+    document.getElementById('byQuarter').innerHTML = renderTimeBreakdown(byQuarter);
+  }
+
+  function renderTimeBreakdown(obj){
+    const keys = Object.keys(obj).sort().reverse();
+    if(keys.length === 0) return '<div class="no-data">No data yet.</div>';
+    return keys.map(k => {
+      const item = obj[k];
+      return `<div class="breakdown-row"><span class="k">${escapeHtml(item.label)}</span><span class="v">${item.count} job${item.count === 1 ? '' : 's'} · ${fmtMoney(item.revenue)}</span></div>`;
+    }).join('');
+  }
+
+  function renderBreakdown(obj){
+    const keys = Object.keys(obj);
+    if(keys.length === 0) return '<div class="no-data">No data yet.</div>';
+    return keys.sort((a,b) => obj[b] - obj[a]).map(k =>
+      `<div class="breakdown-row"><span class="k">${escapeHtml(k)}</span><span class="v">${obj[k]}</span></div>`
+    ).join('');
+  }
+
+  function updateHeaderCount(){
+    document.getElementById('headerCount').textContent = entries.length;
+  }
+
+  function csvEscape(val){
+    const s = val == null ? '' : String(val);
+    if(/[",\n]/.test(s)) return '"' + s.replace(/"/g, '""') + '"';
+    return s;
+  }
+
+  function exportBackup(){
+    if(entries.length === 0){
+      alert('No jobs logged yet — nothing to back up.');
+      return;
+    }
+    const blob = new Blob([JSON.stringify(entries, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'road-service-log-backup-' + todayDateString() + '.json';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
+  function triggerImport(){
+    document.getElementById('importFileInput').click();
+  }
+
+  function handleImportFile(event){
+    const file = event.target.files[0];
+    if(!file) return;
+    const reader = new FileReader();
+    reader.onload = function(e){
+      let imported;
+      try {
+        imported = JSON.parse(e.target.result);
+        if(!Array.isArray(imported)) throw new Error('not an array');
+      } catch(err){
+        alert("Could not read that file — make sure it's a Road Service Log backup (.json) file.");
+        event.target.value = '';
+        return;
+      }
+      imported = imported.map(migrateEntry);
+      const doMerge = confirm(
+        'Tap OK to MERGE this backup into your current data (adds anything not already here — safe, nothing gets deleted).\n\n' +
+        'Tap Cancel to instead REPLACE all current data with this backup (your current tickets on this device will be lost).'
+      );
+      if(doMerge){
+        const existingIds = new Set(entries.map(en => en.id));
+        let added = 0;
+        imported.forEach(en => {
+          if(en && en.id && !existingIds.has(en.id)){
+            entries.push(en);
+            existingIds.add(en.id);
+            added++;
+          }
+        });
+        sortEntries();
+        persist();
+        updateHeaderCount();
+        renderLog();
+        renderSummary();
+        alert('Merged — added ' + added + ' ticket(s). Total now: ' + entries.length + '.');
+      } else {
+        entries = imported;
+        sortEntries();
+        persist();
+        updateHeaderCount();
+        renderLog();
+        renderSummary();
+        alert('Replaced — loaded ' + entries.length + ' ticket(s).');
+      }
+      event.target.value = '';
+    };
+    reader.readAsText(file);
+  }
+
+  function exportCsv(){
+    if(entries.length === 0){
+      alert('No jobs logged yet — nothing to export.');
+      return;
+    }
+    const headers = ['Date','Technician','Provider','Vehicle','Vehicle Name','Vehicle MPG','Year','Make','Model','Service','Service Price','Call Total','Payment Method','Mileage Start','Mileage End','Miles Driven','Customer Name','Customer Phone','Customer Email','Notes'];
+    const rows = [];
+    entries.forEach(e => {
+      (e.services || []).forEach(sv => {
+        const isDiscount = sv.service === 'Discount';
+        const serviceLabel = isDiscount
+          ? `${sv.discountReason || 'Discount'} (${sv.discountType === 'percent' ? sv.discountValue + '% off' : fmtMoney(sv.discountValue) + ' off'})`
+          : sv.service;
+        rows.push([
+          fmtDate(e.createdAt),
+          e.technician || '',
+          e.provider,
+          e.vehicle,
+          e.vehicleNickname || '',
+          e.vehicleMpg != null ? e.vehicleMpg : '',
+          e.vehicleYear || '',
+          e.vehicleMake || '',
+          e.vehicleModel || '',
+          serviceLabel,
+          sv.price.toFixed(2),
+          e.totalPrice.toFixed(2),
+          e.paymentMethod || '',
+          e.mileageStart,
+          e.mileageEnd,
+          e.miles ?? '',
+          e.customer,
+          e.phone || '',
+          e.email,
+          e.notes || ''
+        ]);
+      });
+    });
+    const csv = [headers, ...rows].map(row => row.map(csvEscape).join(',')).join('\r\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    const today = new Date().toISOString().slice(0,10);
+    a.href = url;
+    a.download = 'road-service-log-' + today + '.csv';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
+  // init
+  loadEntries();
+  populateMakeOptions();
+  resetCallDate();
+  updateHeaderCount();
+  renderLog();
+</script>
+
+</body>
+</html>
