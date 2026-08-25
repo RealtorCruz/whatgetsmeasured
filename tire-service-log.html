@@ -338,22 +338,150 @@
   }
   .modal-actions .confirm-delete{background:var(--error); color:#fff; border:none;}
   .modal-actions .cancel-delete{background:#fff; color:var(--text);}
+
+  /* PIN login screen */
+  #loginScreen{
+    position:fixed;
+    inset:0;
+    background:var(--navy);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    z-index:200;
+    padding:20px;
+  }
+  #loginScreen.hidden{display:none;}
+  .login-card{
+    background:#fff;
+    border-radius:var(--radius);
+    padding:28px 24px;
+    max-width:320px;
+    width:100%;
+    text-align:center;
+  }
+  .login-card h1{
+    margin:0 0 4px;
+    color:var(--navy);
+    font-size:1.3rem;
+  }
+  .login-card p{
+    margin:0 0 18px;
+    color:var(--muted);
+    font-size:0.85rem;
+  }
+  #pinInput{
+    text-align:center;
+    letter-spacing:6px;
+    font-size:1.3rem;
+    font-weight:700;
+  }
+  #pinError{
+    color:var(--error);
+    font-size:0.85rem;
+    margin-top:10px;
+    display:none;
+  }
+  #pinError.show{display:block;}
+  #appWrapper.hidden{display:none;}
+
+  .role-owner, .role-tech{display:none;}
+  body.role-is-owner .role-owner{display:flex;}
+  body.role-is-owner .tab.role-owner{display:flex;}
+  body.role-is-tech .role-tech{display:flex;}
+  body.role-is-tech .tab.role-tech{display:flex;}
+  body.role-is-owner .view.role-owner{display:none;}
+  body.role-is-owner .view.role-owner.active{display:block;}
+  body.role-is-tech .view.role-tech{display:none;}
+  body.role-is-tech .view.role-tech.active{display:block;}
+
+  .logout-link{
+    position:absolute;
+    top:18px;
+    right:18px;
+    color:rgba(255,255,255,0.7);
+    font-size:0.78rem;
+    cursor:pointer;
+    text-decoration:underline;
+  }
+
+  .job-card{
+    background:var(--card);
+    border:1px solid var(--border);
+    border-left:4px solid var(--navy);
+    border-radius:var(--radius);
+    padding:14px 16px;
+    margin-bottom:10px;
+  }
+  .job-card.completed{border-left-color:var(--success); opacity:0.7;}
+  .job-card .job-addr{font-weight:700; color:var(--navy); font-size:0.98rem;}
+  .job-card .job-detail{font-size:0.85rem; color:var(--muted); margin-top:4px;}
+  .job-card .job-status{
+    display:inline-block;
+    font-size:0.72rem;
+    font-weight:700;
+    text-transform:uppercase;
+    color:var(--gold);
+    margin-top:8px;
+  }
+  .job-card .start-job-btn{
+    margin-top:10px;
+    width:100%;
+    padding:10px;
+    border:none;
+    border-radius:8px;
+    background:var(--navy);
+    color:#fff;
+    font-weight:700;
+    cursor:pointer;
+  }
+
+  .import-export-row{
+    display:flex;
+    gap:8px;
+    margin-top:10px;
+  }
+  .import-export-row .btn{margin-top:0;}
+  #importJsonInput{display:none;}
 </style>
 </head>
 <body>
 
-<header>
+<div id="loginScreen">
+  <div class="login-card">
+    <h1>Tire Service Log</h1>
+    <p>Enter your PIN to continue</p>
+    <input type="password" id="pinInput" inputmode="numeric" maxlength="6" placeholder="••••">
+    <div id="pinError">Incorrect PIN. Try again.</div>
+    <button class="btn btn-primary" id="pinSubmitBtn">Log In</button>
+  </div>
+</div>
+
+<div id="appWrapper" class="hidden">
+
+<header style="position:relative;">
   <h1>Tire Service Log</h1>
   <p>Mobile tire jobs, tracked</p>
+  <span class="logout-link" id="logoutBtn">Log out</span>
 </header>
 
 <div class="tabs">
+  <div class="tab role-tech" data-tab="myjobs">My Jobs</div>
   <div class="tab active" data-tab="log">Log</div>
   <div class="tab" data-tab="new">New Job</div>
+  <div class="tab role-owner" data-tab="assign">Assign Job</div>
   <div class="tab" data-tab="summary">Summary</div>
 </div>
 
 <main>
+
+  <!-- MY JOBS VIEW (technician) -->
+  <div class="view role-tech" id="view-myjobs">
+    <div class="card" style="display:flex; justify-content:space-between; align-items:center;">
+      <h2 style="margin:0;">Assigned jobs</h2>
+      <button class="btn btn-secondary" style="width:auto; margin:0; padding:8px 14px;" id="refreshJobsBtn">Refresh</button>
+    </div>
+    <div id="myJobsList"><div class="empty-state">Loading...</div></div>
+  </div>
 
   <!-- LOG VIEW -->
   <div class="view active" id="view-log">
@@ -389,18 +517,26 @@
         </div>
       </div>
 
-      <div class="row2">
+      <label>Tire size</label>
+      <div class="row3">
         <div>
-          <label for="tireSize">Tire size</label>
-          <input type="text" id="tireSize" placeholder='225/65R17'>
+          <input type="number" id="tireWidth" placeholder="275" inputmode="numeric">
         </div>
         <div>
-          <label for="tireQty">Quantity</label>
-          <input type="number" id="tireQty" min="1" placeholder="4">
+          <input type="number" id="tireAspect" placeholder="70" inputmode="numeric">
+        </div>
+        <div>
+          <input type="number" id="tireRim" placeholder="18" inputmode="numeric">
         </div>
       </div>
+      <div style="display:flex; gap:10px; font-size:0.72rem; color:var(--muted); margin-top:2px;">
+        <span style="flex:1;">Width</span>
+        <span style="flex:1;">Aspect ratio</span>
+        <span style="flex:1;">Rim (in)</span>
+      </div>
 
-      <label for="tireBrand">Tire brand</label>
+      <label for="tireQty">Quantity</label>
+      <input type="number" id="tireQty" min="1" placeholder="4">
       <input type="text" id="tireBrand" placeholder="Optional">
 
       <label for="priceCharged">Price charged ($)</label>
@@ -434,6 +570,66 @@
 
       <button class="btn btn-primary" id="saveJobBtn">Save Job</button>
       <button class="btn btn-secondary" id="cancelEditBtn" style="display:none;">Cancel Edit</button>
+    </div>
+  </div>
+
+  <!-- ASSIGN JOB VIEW (owner) -->
+  <div class="view role-owner" id="view-assign">
+    <div class="card">
+      <h2>Assign a Job</h2>
+
+      <label for="assignAddress">Address / location</label>
+      <input type="text" id="assignAddress" placeholder="123 Oak St, Apopka FL">
+
+      <div class="row3">
+        <div>
+          <label for="assignVehYear">Year</label>
+          <input type="text" id="assignVehYear" placeholder="Optional">
+        </div>
+        <div>
+          <label for="assignVehMake">Make</label>
+          <input type="text" id="assignVehMake" placeholder="Optional">
+        </div>
+        <div>
+          <label for="assignVehModel">Model</label>
+          <input type="text" id="assignVehModel" placeholder="Optional">
+        </div>
+      </div>
+
+      <label>Tire size</label>
+      <div class="row3">
+        <div>
+          <input type="number" id="assignTireWidth" placeholder="275" inputmode="numeric">
+        </div>
+        <div>
+          <input type="number" id="assignTireAspect" placeholder="70" inputmode="numeric">
+        </div>
+        <div>
+          <input type="number" id="assignTireRim" placeholder="18" inputmode="numeric">
+        </div>
+      </div>
+      <div style="display:flex; gap:10px; font-size:0.72rem; color:var(--muted); margin-top:2px;">
+        <span style="flex:1;">Width</span>
+        <span style="flex:1;">Aspect ratio</span>
+        <span style="flex:1;">Rim (in)</span>
+      </div>
+
+      <label for="assignTireQty">Quantity</label>
+      <input type="number" id="assignTireQty" min="1" placeholder="4">
+      <input type="text" id="assignTireBrand" placeholder="Optional">
+
+      <label for="assignNotes">Notes for technician</label>
+      <textarea id="assignNotes" placeholder="Optional"></textarea>
+
+      <div class="error-box" id="assignErrorMsg"></div>
+
+      <button class="btn btn-primary" id="assignJobBtn">Assign Job</button>
+    </div>
+
+    <div class="card">
+      <h2>Job status</h2>
+      <button class="btn btn-secondary" style="margin-top:0;" id="refreshAllJobsBtn">Refresh</button>
+      <div id="allJobsList" style="margin-top:12px;"><div class="empty-state">Tap Refresh to load jobs.</div></div>
     </div>
   </div>
 
@@ -477,9 +673,17 @@
     </div>
 
     <button class="btn btn-primary" id="exportCsvBtn">Export CSV</button>
+
+    <div class="import-export-row">
+      <button class="btn btn-secondary" id="exportJsonBtn">Backup (JSON)</button>
+      <button class="btn btn-secondary" id="importJsonBtn">Restore (JSON)</button>
+    </div>
+    <input type="file" id="importJsonInput" accept="application/json">
   </div>
 
 </main>
+
+</div><!-- /appWrapper -->
 
 <div class="modal-overlay" id="deleteModal">
   <div class="modal">
@@ -495,6 +699,74 @@
 <div class="toast" id="toast"></div>
 
 <script>
+/* ===== LOGIN / ROLES ===== */
+// Change these PINs to whatever you want. 4-6 digits.
+const OWNER_PIN = '1234';
+const TECH_PIN = '5678';
+const ROLE_KEY = 'tire-service-log-role';
+
+// Paste your Apps Script Web App URL here once deployed.
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw9gpntN-tRy-hKhMviglbBpzDxMQKXJfxS45xwoSQlrecTun8J710KygtAnSNRIRpm/exec';
+
+let currentRole = null;
+let activeJobId = null; // job currently being completed via the New Job form
+
+function applyRole(role){
+  currentRole = role;
+  sessionStorage.setItem(ROLE_KEY, role);
+  document.body.classList.remove('role-is-owner','role-is-tech');
+  document.body.classList.add(role === 'owner' ? 'role-is-owner' : 'role-is-tech');
+  document.getElementById('loginScreen').classList.add('hidden');
+  document.getElementById('appWrapper').classList.remove('hidden');
+
+  // Land technician on My Jobs, owner on Log
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  if(role === 'tech'){
+    document.querySelector('.tab[data-tab="myjobs"]').classList.add('active');
+    document.getElementById('view-myjobs').classList.add('active');
+    loadMyJobs();
+  } else {
+    document.querySelector('.tab[data-tab="log"]').classList.add('active');
+    document.getElementById('view-log').classList.add('active');
+  }
+}
+
+document.getElementById('pinSubmitBtn').addEventListener('click', attemptLogin);
+document.getElementById('pinInput').addEventListener('keydown', (e)=>{
+  if(e.key === 'Enter') attemptLogin();
+});
+function attemptLogin(){
+  const val = document.getElementById('pinInput').value.trim();
+  const errBox = document.getElementById('pinError');
+  if(val === OWNER_PIN){
+    errBox.classList.remove('show');
+    applyRole('owner');
+  } else if(val === TECH_PIN){
+    errBox.classList.remove('show');
+    applyRole('tech');
+  } else {
+    errBox.classList.add('show');
+  }
+}
+
+document.getElementById('logoutBtn').addEventListener('click', ()=>{
+  sessionStorage.removeItem(ROLE_KEY);
+  currentRole = null;
+  document.body.classList.remove('role-is-owner','role-is-tech');
+  document.getElementById('appWrapper').classList.add('hidden');
+  document.getElementById('loginScreen').classList.remove('hidden');
+  document.getElementById('pinInput').value = '';
+});
+
+/* Restore session on load if already logged in this tab session */
+(function restoreSession(){
+  const saved = sessionStorage.getItem(ROLE_KEY);
+  if(saved === 'owner' || saved === 'tech'){
+    applyRole(saved);
+  }
+})();
+
 const STORAGE_KEY = 'tire-service-log-entries';
 let entries = [];
 let editingId = null;
@@ -525,6 +797,16 @@ function fmtDate(iso){
 function fmtMoney(n){
   return '$' + (Math.round(n * 100) / 100).toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2});
 }
+function combineTireSize(width, aspect, rim){
+  if(!width && !aspect && !rim) return '';
+  return `${width || '?'}/${aspect || '?'}R${rim || '?'}`;
+}
+function parseTireSize(str){
+  if(!str) return {width:'', aspect:'', rim:''};
+  const m = String(str).match(/^(\d+)\s*\/\s*(\d+)\s*\/?\s*R?\s*(\d+)$/i);
+  if(m) return {width:m[1], aspect:m[2], rim:m[3]};
+  return {width:'', aspect:'', rim:''};
+}
 function showToast(msg){
   const t = document.getElementById('toast');
   t.textContent = msg;
@@ -541,6 +823,8 @@ document.querySelectorAll('.tab').forEach(tab=>{
     document.getElementById('view-' + tab.dataset.tab).classList.add('active');
     if(tab.dataset.tab === 'log') renderLog();
     if(tab.dataset.tab === 'summary') renderSummary();
+    if(tab.dataset.tab === 'myjobs') loadMyJobs();
+    if(tab.dataset.tab === 'assign') loadAllJobs();
   });
 });
 
@@ -579,11 +863,14 @@ function setDefaultDate(){
 document.getElementById('saveJobBtn').addEventListener('click', ()=>{
   const jobDate = document.getElementById('jobDate').value;
   const priceChargedRaw = document.getElementById('priceCharged').value;
-  const tireSize = document.getElementById('tireSize').value.trim();
+  const tireWidth = document.getElementById('tireWidth').value.trim();
+  const tireAspect = document.getElementById('tireAspect').value.trim();
+  const tireRim = document.getElementById('tireRim').value.trim();
+  const tireSize = combineTireSize(tireWidth, tireAspect, tireRim);
 
   const errBox = document.getElementById('errorMsg');
-  if(!jobDate || !priceChargedRaw || !tireSize){
-    errBox.textContent = 'Date, tire size, and price charged are required.';
+  if(!jobDate || !priceChargedRaw || !tireWidth || !tireAspect || !tireRim){
+    errBox.textContent = 'Date, tire size (all 3 parts), and price charged are required.';
     errBox.classList.add('show');
     return;
   }
@@ -627,6 +914,13 @@ document.getElementById('saveJobBtn').addEventListener('click', ()=>{
     showToast('Job saved');
   }
   persist();
+
+  // If this ticket completed an assigned job, sync that back to the shared Jobs sheet
+  if(activeJobId){
+    markJobComplete(activeJobId, entry.id);
+    activeJobId = null;
+  }
+
   resetForm();
   editingId = null;
   document.getElementById('cancelEditBtn').style.display = 'none';
@@ -640,7 +934,7 @@ document.getElementById('saveJobBtn').addEventListener('click', ()=>{
 });
 
 function resetForm(){
-  ['customerName','customerPhone','vehYear','vehMake','vehModel','tireSize','tireQty',
+  ['customerName','customerPhone','vehYear','vehMake','vehModel','tireWidth','tireAspect','tireRim','tireQty',
    'tireBrand','priceCharged','mileageStart','mileageEnd','jobLocation','jobNotes']
     .forEach(id => document.getElementById(id).value = '');
   document.querySelectorAll('.truck-btn').forEach(b=>b.classList.remove('selected'));
@@ -667,7 +961,10 @@ function startEdit(id){
   document.getElementById('vehYear').value = e.vehYear || '';
   document.getElementById('vehMake').value = e.vehMake || '';
   document.getElementById('vehModel').value = e.vehModel || '';
-  document.getElementById('tireSize').value = e.tireSize || '';
+  const parsed = parseTireSize(e.tireSize);
+  document.getElementById('tireWidth').value = parsed.width;
+  document.getElementById('tireAspect').value = parsed.aspect;
+  document.getElementById('tireRim').value = parsed.rim;
   document.getElementById('tireQty').value = e.tireQty || '';
   document.getElementById('tireBrand').value = e.tireBrand || '';
   document.getElementById('priceCharged').value = e.priceCharged ?? '';
@@ -853,6 +1150,183 @@ document.getElementById('exportCsvBtn').addEventListener('click', ()=>{
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
   showToast('CSV exported');
+});
+
+/* ===== JOBS (shared via Google Sheet / Apps Script) ===== */
+
+async function loadMyJobs(){
+  const list = document.getElementById('myJobsList');
+  list.innerHTML = '<div class="empty-state">Loading...</div>';
+  try{
+    const res = await fetch(`${APPS_SCRIPT_URL}?action=listJobs&status=Assigned`);
+    const data = await res.json();
+    renderMyJobs(data.jobs || []);
+  }catch(err){
+    list.innerHTML = '<div class="empty-state">Could not load jobs. Check your connection and try Refresh.</div>';
+  }
+}
+document.getElementById('refreshJobsBtn').addEventListener('click', loadMyJobs);
+
+function renderMyJobs(jobs){
+  const list = document.getElementById('myJobsList');
+  if(jobs.length === 0){
+    list.innerHTML = '<div class="empty-state">No open jobs assigned right now.</div>';
+    return;
+  }
+  list.innerHTML = jobs.map(j => {
+    const vehicle = [j.VehYear, j.VehMake, j.VehModel].filter(Boolean).join(' ');
+    const tireLine = [j.TireQty ? `${j.TireQty}x` : '', j.TireSize, j.TireBrand].filter(Boolean).join(' ');
+    return `
+      <div class="job-card">
+        <div class="job-addr">${escapeHtml(j.Address || 'No address given')}</div>
+        ${vehicle ? `<div class="job-detail">${escapeHtml(vehicle)}</div>` : ''}
+        ${tireLine ? `<div class="job-detail">${escapeHtml(tireLine)}</div>` : ''}
+        ${j.Notes ? `<div class="job-detail">${escapeHtml(j.Notes)}</div>` : ''}
+        <div class="job-status">Assigned</div>
+        <button class="start-job-btn" onclick='startJob(${JSON.stringify(j).replace(/'/g,"&#39;")})'>Start This Job</button>
+      </div>
+    `;
+  }).join('');
+}
+
+function startJob(job){
+  activeJobId = job.JobID;
+  resetForm();
+  document.getElementById('jobLocation').value = job.Address || '';
+  document.getElementById('vehYear').value = job.VehYear || '';
+  document.getElementById('vehMake').value = job.VehMake || '';
+  document.getElementById('vehModel').value = job.VehModel || '';
+  const parsedJobTire = parseTireSize(job.TireSize);
+  document.getElementById('tireWidth').value = parsedJobTire.width;
+  document.getElementById('tireAspect').value = parsedJobTire.aspect;
+  document.getElementById('tireRim').value = parsedJobTire.rim;
+  document.getElementById('tireQty').value = job.TireQty || '';
+  document.getElementById('tireBrand').value = job.TireBrand || '';
+  if(job.Notes) document.getElementById('jobNotes').value = job.Notes;
+
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  document.querySelector('.tab[data-tab="new"]').classList.add('active');
+  document.getElementById('view-new').classList.add('active');
+  showToast('Job loaded — fill in price and finish to complete it');
+}
+
+async function markJobComplete(jobId, ticketRef){
+  try{
+    await fetch(APPS_SCRIPT_URL, {
+      method:'POST',
+      headers:{'Content-Type':'text/plain;charset=utf-8'},
+      body: JSON.stringify({ action:'completeJob', jobId, ticketRef })
+    });
+  }catch(err){
+    // Non-fatal — ticket is already saved locally either way
+    console.warn('Could not sync job completion', err);
+  }
+}
+
+/* Owner: create + view jobs */
+document.getElementById('assignJobBtn').addEventListener('click', async ()=>{
+  const address = document.getElementById('assignAddress').value.trim();
+  const aTireWidth = document.getElementById('assignTireWidth').value.trim();
+  const aTireAspect = document.getElementById('assignTireAspect').value.trim();
+  const aTireRim = document.getElementById('assignTireRim').value.trim();
+  const tireSize = combineTireSize(aTireWidth, aTireAspect, aTireRim);
+  const errBox = document.getElementById('assignErrorMsg');
+  if(!address || !aTireWidth || !aTireAspect || !aTireRim){
+    errBox.textContent = 'Address and tire size (all 3 parts) are required.';
+    errBox.classList.add('show');
+    return;
+  }
+  errBox.classList.remove('show');
+
+  const payload = {
+    action: 'createJob',
+    address,
+    vehYear: document.getElementById('assignVehYear').value.trim(),
+    vehMake: document.getElementById('assignVehMake').value.trim(),
+    vehModel: document.getElementById('assignVehModel').value.trim(),
+    tireSize,
+    tireQty: document.getElementById('assignTireQty').value.trim(),
+    tireBrand: document.getElementById('assignTireBrand').value.trim(),
+    notes: document.getElementById('assignNotes').value.trim()
+  };
+
+  try{
+    await fetch(APPS_SCRIPT_URL, {
+      method:'POST',
+      headers:{'Content-Type':'text/plain;charset=utf-8'},
+      body: JSON.stringify(payload)
+    });
+    showToast('Job assigned');
+    ['assignAddress','assignVehYear','assignVehMake','assignVehModel','assignTireWidth','assignTireAspect','assignTireRim','assignTireQty','assignTireBrand','assignNotes']
+      .forEach(id => document.getElementById(id).value = '');
+  }catch(err){
+    errBox.textContent = 'Could not reach the server. Check your connection and try again.';
+    errBox.classList.add('show');
+  }
+});
+
+async function loadAllJobs(){
+  const list = document.getElementById('allJobsList');
+  list.innerHTML = '<div class="empty-state">Loading...</div>';
+  try{
+    const res = await fetch(`${APPS_SCRIPT_URL}?action=listJobs`);
+    const data = await res.json();
+    const jobs = data.jobs || [];
+    if(jobs.length === 0){
+      list.innerHTML = '<div class="empty-state">No jobs yet.</div>';
+      return;
+    }
+    list.innerHTML = jobs.map(j => `
+      <div class="job-card ${j.Status === 'Completed' ? 'completed' : ''}">
+        <div class="job-addr">${escapeHtml(j.Address || 'No address given')}</div>
+        <div class="job-detail">${escapeHtml([j.TireQty ? j.TireQty+'x' : '', j.TireSize, j.TireBrand].filter(Boolean).join(' '))}</div>
+        <div class="job-status" style="color:${j.Status === 'Completed' ? 'var(--success)' : 'var(--gold)'}">${escapeHtml(j.Status || '')}</div>
+      </div>
+    `).join('');
+  }catch(err){
+    list.innerHTML = '<div class="empty-state">Could not load jobs. Check your connection and try Refresh.</div>';
+  }
+}
+document.getElementById('refreshAllJobsBtn').addEventListener('click', loadAllJobs);
+
+/* ===== JSON backup / restore ===== */
+document.getElementById('exportJsonBtn').addEventListener('click', ()=>{
+  const blob = new Blob([JSON.stringify(entries, null, 2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const today = new Date().toISOString().slice(0,10);
+  a.href = url;
+  a.download = `tire-service-log-backup-${today}.json`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  showToast('Backup downloaded');
+});
+
+document.getElementById('importJsonBtn').addEventListener('click', ()=>{
+  document.getElementById('importJsonInput').click();
+});
+document.getElementById('importJsonInput').addEventListener('change', (e)=>{
+  const file = e.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = (evt) => {
+    try{
+      const imported = JSON.parse(evt.target.result);
+      if(!Array.isArray(imported)) throw new Error('not an array');
+      entries = imported;
+      persist();
+      renderLog();
+      renderSummary();
+      showToast('Data restored from backup');
+    }catch(err){
+      alert('That file doesn\'t look like a valid backup.');
+    }
+  };
+  reader.readAsText(file);
+  e.target.value = '';
 });
 
 /* Init */
