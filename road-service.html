@@ -281,7 +281,7 @@
       <div class="row2">
         <label class="field">
           <span class="field-label">Vehicle Name (optional)</span>
-          <select id="vehicleNickname" onchange="toggleCustom('vehicleNickname')">
+          <select id="vehicleNickname" onchange="handleVehicleNicknameChange()">
             <option value="">Select vehicle name…</option>
             <option>Luna</option>
             <option>RU</option>
@@ -293,6 +293,12 @@
           <span class="field-label">MPG (optional)</span>
           <input type="number" inputmode="decimal" id="vehicleMpg" placeholder="e.g. 22" oninput="updateFuelCostEstimate()">
         </label>
+      </div>
+      <div class="hidden" id="saveMpgDefaultWrap" style="margin:-8px 0 12px;">
+        <a href="#" onclick="saveMpgDefault(); return false;" style="font-size:12px; color:var(--blue-light); text-decoration:underline;">
+          Save <span id="saveMpgDefaultLabel"></span> as default MPG
+        </a>
+        <span id="saveMpgDefaultConfirm" class="hidden" style="font-size:12px; color:var(--success-text); margin-left:8px;">Saved ✓</span>
       </div>
       <label class="field hidden" id="vehicleNicknameCustomWrap">
         <span class="field-label">Custom Vehicle Name</span>
@@ -475,6 +481,14 @@
         <div class="k">Total Miles</div>
         <div class="v small" id="sumMiles">0.0</div>
       </div>
+      <div class="stat-card">
+        <div class="k">Fuel Cost</div>
+        <div class="v small" id="sumFuelCost">$0.00</div>
+      </div>
+      <div class="stat-card">
+        <div class="k">Net After Fuel</div>
+        <div class="v small" id="sumNetAfterFuel">$0.00</div>
+      </div>
     </div>
 
     <div class="card">
@@ -548,6 +562,7 @@
   let isSyncing = false;
   let syncStatus = null; // null | 'offline' | 'error' | 'synced'
   let currentUser = null; // 'Dom' or 'Abel', set at login
+  const REGION_BY_LOGIN = { 'Dom': 'Tallahassee', 'Abel': 'Central FL' }; // Master has no fixed region
 
   const SESSION_KEY = 'road-service-log-session';
   const STORAGE_KEY = 'road-service-log';
@@ -829,6 +844,13 @@
     document.getElementById('callDate').value = todayDateString();
   }
 
+  function resetRegionField(){
+    const defaultRegion = REGION_BY_LOGIN[currentUser] || '';
+    document.getElementById('region').value = defaultRegion;
+    document.getElementById('regionCustom').value = '';
+    document.getElementById('regionCustomWrap').classList.add('hidden');
+  }
+
   function composeDateISO(dateStr){
     const val = dateStr && dateStr.trim() ? dateStr : todayDateString();
     return new Date(val + 'T12:00:00').toISOString();
@@ -841,6 +863,8 @@
     document.getElementById('vehicleMpg').value = '';
     document.getElementById('gasPricePerGallon').value = '';
     document.getElementById('fuelCostHint').classList.add('hidden');
+    document.getElementById('saveMpgDefaultWrap').classList.add('hidden');
+    document.getElementById('saveMpgDefaultConfirm').classList.add('hidden');
     document.getElementById('vehicleYear').value = '';
     document.getElementById('vehicleMake').value = '';
     document.getElementById('makeCustom').value = '';
@@ -854,6 +878,48 @@
     modelSelect.disabled = true;
     modelSelect.innerHTML = '<option value="">Select make first…</option>';
     document.getElementById('modelSelectWrap').classList.remove('hidden');
+  }
+
+  // ── Per-vehicle default MPG (Luna/RU/Camry) — stored on this device, not
+  // synced to the Sheet, since it's just a convenience default, not business data.
+  const MPG_DEFAULTS_KEY = 'road-service-vehicle-mpg-defaults';
+
+  function getMpgDefaults(){
+    try {
+      const raw = localStorage.getItem(MPG_DEFAULTS_KEY);
+      return raw ? JSON.parse(raw) : {};
+    } catch(e){ return {}; }
+  }
+
+  function handleVehicleNicknameChange(){
+    toggleCustom('vehicleNickname');
+    const nicknameSel = document.getElementById('vehicleNickname').value;
+    const saveWrap = document.getElementById('saveMpgDefaultWrap');
+    document.getElementById('saveMpgDefaultConfirm').classList.add('hidden');
+
+    if(nicknameSel && nicknameSel !== '__custom'){
+      const defaults = getMpgDefaults();
+      if(defaults[nicknameSel] != null){
+        document.getElementById('vehicleMpg').value = defaults[nicknameSel];
+        updateFuelCostEstimate();
+      }
+      document.getElementById('saveMpgDefaultLabel').textContent = nicknameSel;
+      saveWrap.classList.remove('hidden');
+    } else {
+      saveWrap.classList.add('hidden');
+    }
+  }
+
+  function saveMpgDefault(){
+    const nickname = document.getElementById('vehicleNickname').value;
+    const mpg = document.getElementById('vehicleMpg').value;
+    if(!nickname || nickname === '__custom' || !mpg) return;
+    const defaults = getMpgDefaults();
+    defaults[nickname] = parseFloat(mpg);
+    localStorage.setItem(MPG_DEFAULTS_KEY, JSON.stringify(defaults));
+    const confirmEl = document.getElementById('saveMpgDefaultConfirm');
+    confirmEl.classList.remove('hidden');
+    setTimeout(() => confirmEl.classList.add('hidden'), 2000);
   }
 
   function updateMiles(){
@@ -1130,17 +1196,16 @@
     saveLocal();
 
     // reset form
-    ['mileageStart','mileageEnd','providerCustom','firstName','lastName','phone','email','paymentMethodCustom','notes','regionCustom']
+    ['mileageStart','mileageEnd','providerCustom','firstName','lastName','phone','email','paymentMethodCustom','notes']
       .forEach(id => document.getElementById(id).value = '');
     document.getElementById('provider').value = '';
     document.getElementById('providerCustomWrap').classList.add('hidden');
-    document.getElementById('region').value = '';
-    document.getElementById('regionCustomWrap').classList.add('hidden');
     document.getElementById('milesHint').classList.add('hidden');
     document.getElementById('paymentMethod').value = '';
     document.getElementById('paymentMethodCustomWrap').classList.add('hidden');
     resetVehicleFields();
     resetCallDate();
+    resetRegionField();
     document.getElementById('serviceRows').innerHTML = '';
     serviceRowCount = 0;
     addServiceRow();
@@ -1314,18 +1379,17 @@
     editingId = null;
     document.getElementById('saveBtn').textContent = 'Save Ticket';
     document.getElementById('cancelEditBtn').classList.add('hidden');
-    ['mileageStart','mileageEnd','providerCustom','firstName','lastName','phone','email','paymentMethodCustom','notes','regionCustom']
+    ['mileageStart','mileageEnd','providerCustom','firstName','lastName','phone','email','paymentMethodCustom','notes']
       .forEach(id => document.getElementById(id).value = '');
     document.getElementById('provider').value = '';
     document.getElementById('providerCustomWrap').classList.add('hidden');
-    document.getElementById('region').value = '';
-    document.getElementById('regionCustomWrap').classList.add('hidden');
     document.getElementById('milesHint').classList.add('hidden');
     document.getElementById('paymentMethod').value = '';
     document.getElementById('paymentMethodCustomWrap').classList.add('hidden');
     document.getElementById('errorMsg').classList.add('hidden');
     resetVehicleFields();
     resetCallDate();
+    resetRegionField();
     document.getElementById('serviceRows').innerHTML = '';
     serviceRowCount = 0;
     addServiceRow();
@@ -1482,12 +1546,16 @@
     const jobs = visible.length;
     const revenue = visible.reduce((sum, e) => sum + (e.totalPrice || 0), 0);
     const miles = visible.reduce((sum, e) => sum + (parseFloat(e.miles) || 0), 0);
+    const fuelCost = visible.reduce((sum, e) => sum + (e.fuelCostEstimate || 0), 0);
+    const netAfterFuel = revenue - fuelCost;
     const avg = jobs ? revenue / jobs : 0;
 
     document.getElementById('sumJobs').textContent = jobs;
     document.getElementById('sumRevenue').textContent = fmtMoney(revenue);
     document.getElementById('sumAvg').textContent = fmtMoney(avg);
     document.getElementById('sumMiles').textContent = miles.toFixed(1);
+    document.getElementById('sumFuelCost').textContent = fmtMoney(fuelCost);
+    document.getElementById('sumNetAfterFuel').textContent = fmtMoney(netAfterFuel);
 
     const byService = {};
     const byProvider = {};
@@ -1713,6 +1781,7 @@
   function startApp(){
     populateMakeOptions();
     resetCallDate();
+    resetRegionField();
     loadLocal();          // instant — always works, even with zero signal
     updateHeaderCount();
     renderLog();
