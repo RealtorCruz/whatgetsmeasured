@@ -166,6 +166,9 @@
 
   .breakdown-title{font-size:13px; font-weight:700; color:var(--text); margin-bottom:10px;}
   .breakdown-row{display:flex; align-items:center; justify-content:space-between; padding:6px 0; border-bottom:1px solid #F1E6EC; font-size:13.5px;}
+  .breakdown-row .v-stack{display:flex; flex-direction:column; align-items:flex-end; line-height:1.3;}
+  .breakdown-row .v-stack .v-jobs{font-size:12px; color:var(--muted); font-weight:500;}
+  .breakdown-row .v-stack .v-revenue{font-size:14px; color:var(--blue); font-weight:700;}
   .breakdown-row:last-child{border-bottom:none;}
   .breakdown-row .k{color:#4A3F49;}
   .breakdown-row .v{font-weight:600; color:var(--blue);}
@@ -174,11 +177,24 @@
 </head>
 <body>
 
+<div id="loginScreen" style="min-height:100vh; display:flex; align-items:center; justify-content:center; background:var(--bg); padding:20px;">
+  <div style="background:#fff; border:1px solid var(--border); border-radius:14px; padding:28px 24px; max-width:340px; width:100%; box-shadow:0 4px 16px rgba(0,0,0,0.08);">
+    <h1 style="font-size:19px; font-weight:800; color:var(--blue); margin:0 0 4px;">Road Service Log</h1>
+    <p style="font-size:13px; color:var(--muted); margin:0 0 18px;">Enter your PIN to continue</p>
+    <input type="password" id="pinInput" maxlength="6" placeholder="••••" inputmode="numeric"
+      style="width:100%; text-align:center; font-size:22px; letter-spacing:6px; border:1px solid #E3CFDA; border-radius:8px; padding:12px; margin-bottom:8px;">
+    <div id="pinError" class="hidden" style="font-size:12.5px; color:var(--danger); margin-bottom:10px;">Incorrect PIN. Try again.</div>
+    <button class="btn-primary" id="pinSubmitBtn" onclick="attemptLogin()">Log In</button>
+  </div>
+</div>
+
+<div id="appWrapper" class="hidden">
+
 <div class="header">
   <div class="header-row">
     <div class="brand">
       <h1>Road Service Log</h1>
-      <div class="brand-sub">Service Ticket Tracker</div>
+      <div class="brand-sub">Service Ticket Tracker · <span id="loggedInAs"></span> · <a href="#" id="logoutLink" onclick="logout(); return false;" style="color:#C9D3ED; text-decoration:underline;">Log out</a></div>
     </div>
     <div>
       <div class="stat-label">Calls Logged</div>
@@ -200,6 +216,7 @@
 
   <!-- LOG VIEW -->
   <div id="view-log">
+    <div id="syncStatusBar" class="hidden" style="font-size:11.5px; padding:6px 10px; border-radius:8px; margin-bottom:10px;"></div>
     <div id="logList"></div>
     <div id="emptyState" class="empty hidden">
       <p>No jobs logged yet.</p>
@@ -218,17 +235,17 @@
       </label>
 
       <label class="field">
-        <span class="field-label">Technician (optional)</span>
-        <select id="technician" onchange="toggleCustom('technician')">
-          <option value="">Select technician…</option>
-          <option>Dom</option>
-          <option>Abel</option>
+        <span class="field-label">Region</span>
+        <select id="region" onchange="toggleCustom('region')">
+          <option value="">Select region…</option>
+          <option>Central FL</option>
+          <option>Tallahassee</option>
           <option value="__custom">Other…</option>
         </select>
       </label>
-      <label class="field hidden" id="technicianCustomWrap">
-        <span class="field-label">Custom Technician</span>
-        <input id="technicianCustom" placeholder="Technician name">
+      <label class="field hidden" id="regionCustomWrap">
+        <span class="field-label">Custom Region</span>
+        <input id="regionCustom" placeholder="Region name">
       </label>
 
       <div class="row2">
@@ -274,13 +291,22 @@
         </label>
         <label class="field">
           <span class="field-label">MPG (optional)</span>
-          <input type="number" inputmode="decimal" id="vehicleMpg" placeholder="e.g. 22">
+          <input type="number" inputmode="decimal" id="vehicleMpg" placeholder="e.g. 22" oninput="updateFuelCostEstimate()">
         </label>
       </div>
       <label class="field hidden" id="vehicleNicknameCustomWrap">
         <span class="field-label">Custom Vehicle Name</span>
         <input id="vehicleNicknameCustom" placeholder="Vehicle name">
       </label>
+
+      <label class="field">
+        <span class="field-label">Gas Price Per Gallon ($) (optional)</span>
+        <div class="price-wrap">
+          <span class="dollar">$</span>
+          <input type="number" inputmode="decimal" id="gasPricePerGallon" placeholder="e.g. 3.29" oninput="updateFuelCostEstimate()">
+        </div>
+      </label>
+      <div class="miles-hint hidden" id="fuelCostHint"></div>
 
       <div class="row2">
         <label class="field">
@@ -345,6 +371,7 @@
           <option>Cash</option>
           <option>Zelle</option>
           <option>Cash App</option>
+          <option>Venmo</option>
           <option>Card</option>
           <optgroup label="Provider Invoice">
             <option>Allstate</option>
@@ -428,11 +455,9 @@
 
   <div id="view-summary" class="hidden">
     <button class="btn-primary" style="margin-bottom:8px;" onclick="exportCsv()">Export CSV</button>
-    <div style="display:flex; gap:8px; margin-bottom:12px;">
-      <button class="btn-secondary" style="margin-top:0;" onclick="exportBackup()">Backup Data</button>
-      <button class="btn-secondary" style="margin-top:0;" onclick="triggerImport()">Restore Data</button>
+    <div style="font-size:11.5px; color:var(--faint); margin-bottom:12px;">
+      All data lives in your Google Sheet — open it directly anytime for a full backup or deeper analysis.
     </div>
-    <input type="file" id="importFileInput" accept="application/json,.json" class="hidden" onchange="handleImportFile(event)">
     <div class="stat-grid" style="margin-bottom:12px;">
       <div class="stat-card">
         <div class="k">Total Calls</div>
@@ -472,16 +497,21 @@
       <div id="byProvider" class="no-data">No data yet.</div>
     </div>
 
-    <div class="card">
-      <div class="breakdown-title">By Technician</div>
-      <div id="byTechnician" class="no-data">No data yet.</div>
+    <div class="card hidden" id="byRegionCard">
+      <div class="breakdown-title">By Region</div>
+      <div id="byRegion" class="no-data">No data yet.</div>
     </div>
   </div>
 
 </div>
 
+</div>
+<!-- /appWrapper -->
+
 <script>
-  const STORAGE_KEY = 'road-service-log';
+  // ── PASTE YOUR APPS SCRIPT WEB APP URL BELOW ──
+  const SHEETS_API_URL = 'PASTE_YOUR_APPS_SCRIPT_WEB_APP_URL_HERE';
+
   const SERVICE_OPTIONS = ["Tire Change", "Gas", "Lockout", "Boost", "Battery Replacement", "Tire Swap", "Discount"];
   const MAKE_MODELS = {
     "Toyota": ["Camry","Corolla","RAV4","Highlander","Tacoma","Tundra","4Runner","Sienna","Prius","Avalon","Venza","Sequoia"],
@@ -515,6 +545,13 @@
   let entries = [];
   let serviceRowCount = 0;
   let editingId = null;
+  let isSyncing = false;
+  let syncStatus = null; // null | 'offline' | 'error' | 'synced'
+  let currentUser = null; // 'Dom' or 'Abel', set at login
+
+  const SESSION_KEY = 'road-service-log-session';
+  const STORAGE_KEY = 'road-service-log';
+  const PENDING_DELETES_KEY = 'road-service-log-pending-deletes';
 
   function migrateEntry(e){
     if(e.services) return e;
@@ -529,16 +566,125 @@
     entries.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
   }
 
-  function loadEntries(){
+  function apiConfigured(){
+    return SHEETS_API_URL && SHEETS_API_URL.indexOf('PASTE_YOUR') === -1;
+  }
+
+  // ── Local storage: the instant, always-available buffer ──
+  function loadLocal(){
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
-      entries = raw ? JSON.parse(raw) : [];
-      entries = entries.map(migrateEntry);
-      sortEntries();
+      entries = raw ? JSON.parse(raw).map(migrateEntry) : [];
     } catch(e){ entries = []; }
+    sortEntries();
   }
-  function persist(){
+
+  function saveLocal(){
     localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
+  }
+
+  function getPendingDeletes(){
+    try {
+      const raw = localStorage.getItem(PENDING_DELETES_KEY);
+      return raw ? JSON.parse(raw) : [];
+    } catch(e){ return []; }
+  }
+
+  function addPendingDelete(id){
+    const list = getPendingDeletes();
+    if(!list.includes(id)) list.push(id);
+    localStorage.setItem(PENDING_DELETES_KEY, JSON.stringify(list));
+  }
+
+  function removePendingDelete(id){
+    const list = getPendingDeletes().filter(x => x !== id);
+    localStorage.setItem(PENDING_DELETES_KEY, JSON.stringify(list));
+  }
+
+  // ── Google Sheets: synced whenever a connection is available ──
+  async function postToSheet(payload){
+    if(!apiConfigured()) throw new Error('Google Sheets connection not set up yet.');
+    const res = await fetch(SHEETS_API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' }, // text/plain avoids a CORS preflight Apps Script can't handle
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json();
+    if(!data.success) throw new Error(data.error || 'Unknown error from Sheets API');
+    return data;
+  }
+
+  async function fetchFromSheet(){
+    const res = await fetch(SHEETS_API_URL, { method: 'GET' });
+    const data = await res.json();
+    if(!data.success) throw new Error(data.error || 'Unknown error from Sheets API');
+    return (data.entries || []).map(migrateEntry);
+  }
+
+  // Merge what the Sheet has with what's only local so far, without losing
+  // anything and without resurrecting anything deleted locally but not yet
+  // confirmed deleted on the Sheet.
+  function mergeSheetIntoLocal(sheetEntries){
+    const pendingDeletes = new Set(getPendingDeletes());
+    const byId = {};
+    entries.forEach(e => { byId[e.id] = e; });
+    sheetEntries.forEach(e => {
+      if(pendingDeletes.has(e.id)) return; // don't let a pending delete come back
+      const local = byId[e.id];
+      if(local && local.submitted === false) return; // a local edit hasn't synced yet — don't overwrite it with stale Sheet data
+      e.submitted = true;
+      byId[e.id] = e;
+    });
+    entries = Object.values(byId);
+    sortEntries();
+    saveLocal();
+  }
+
+  // Push anything created/edited locally while offline, and retry any
+  // deletes that didn't make it to the Sheet yet.
+  async function pushPendingChanges(){
+    if(!apiConfigured()) return;
+    const pending = entries.filter(e => !e.submitted);
+    for(const entry of pending){
+      try {
+        await postToSheet({ action: 'create', ticket: entry });
+        entry.submitted = true;
+      } catch(err) {
+        // still offline or Sheet unreachable — leave pending, try again next sync
+      }
+    }
+    saveLocal();
+
+    const pendingDeletes = getPendingDeletes();
+    for(const id of pendingDeletes){
+      try {
+        await postToSheet({ action: 'delete', id: id });
+        removePendingDelete(id);
+      } catch(err) {
+        // still pending — try again next sync
+      }
+    }
+  }
+
+  // Full sync cycle: pull the Sheet in, merge, push anything still pending.
+  // Never throws — always resolves so the UI never gets stuck waiting on a
+  // network call. Local data is already on screen before this even starts.
+  async function syncWithSheet(){
+    if(!apiConfigured()){
+      syncStatus = 'unconfigured';
+      return;
+    }
+    isSyncing = true;
+    try {
+      const sheetEntries = await fetchFromSheet();
+      mergeSheetIntoLocal(sheetEntries);
+      await pushPendingChanges();
+      syncStatus = 'synced';
+    } catch(err) {
+      syncStatus = 'offline';
+    } finally {
+      isSyncing = false;
+    }
   }
 
   function setView(v){
@@ -551,8 +697,16 @@
       document.getElementById('view-' + name).classList.toggle('hidden', name !== v);
       document.querySelector('.tab[data-view="' + name + '"]').classList.toggle('active', name === v);
     });
-    if(v === 'log') renderLog();
-    if(v === 'summary') renderSummary();
+    if(v === 'log'){
+      renderLog(); // instant, from whatever's already local
+      updateHeaderCount();
+      syncWithSheet().then(() => { renderLog(); updateHeaderCount(); });
+    }
+    if(v === 'summary'){
+      renderSummary(); // instant, from whatever's already local
+      updateHeaderCount();
+      syncWithSheet().then(() => { renderSummary(); updateHeaderCount(); });
+    }
     if(v === 'new' && document.getElementById('serviceRows').children.length === 0){
       addServiceRow();
     }
@@ -685,6 +839,8 @@
     document.getElementById('vehicleNicknameCustom').value = '';
     document.getElementById('vehicleNicknameCustomWrap').classList.add('hidden');
     document.getElementById('vehicleMpg').value = '';
+    document.getElementById('gasPricePerGallon').value = '';
+    document.getElementById('fuelCostHint').classList.add('hidden');
     document.getElementById('vehicleYear').value = '';
     document.getElementById('vehicleMake').value = '';
     document.getElementById('makeCustom').value = '';
@@ -706,6 +862,30 @@
     const hint = document.getElementById('milesHint');
     if(!isNaN(s) && !isNaN(e) && e >= s){
       hint.textContent = (e - s).toFixed(1) + ' miles driven';
+      hint.classList.remove('hidden');
+    } else {
+      hint.classList.add('hidden');
+    }
+    updateFuelCostEstimate();
+  }
+
+  function getCurrentMiles(){
+    const s = parseFloat(document.getElementById('mileageStart').value);
+    const e = parseFloat(document.getElementById('mileageEnd').value);
+    if(!isNaN(s) && !isNaN(e) && e >= s) return e - s;
+    return null;
+  }
+
+  function updateFuelCostEstimate(){
+    const hint = document.getElementById('fuelCostHint');
+    const miles = getCurrentMiles();
+    const mpg = parseFloat(document.getElementById('vehicleMpg').value) || 0;
+    const gasPrice = parseFloat(document.getElementById('gasPricePerGallon').value) || 0;
+
+    if(miles !== null && mpg > 0 && gasPrice > 0){
+      const gallons = miles / mpg;
+      const cost = gallons * gasPrice;
+      hint.textContent = `Estimated fuel cost: ${fmtMoney(cost)} (${gallons.toFixed(2)} gal)`;
       hint.classList.remove('hidden');
     } else {
       hint.classList.add('hidden');
@@ -866,17 +1046,20 @@
     return { services, valid: valid && services.length > 0 };
   }
 
-  function saveTicket(){
+  async function saveTicket(){
     const mileageStart = document.getElementById('mileageStart').value;
     const mileageEnd = document.getElementById('mileageEnd').value;
-    const technicianSel = document.getElementById('technician').value;
-    const technicianCustom = document.getElementById('technicianCustom').value.trim();
-    const technician = technicianSel === '__custom' ? technicianCustom : technicianSel;
+    const technician = currentUser; // auto-assigned from login, not manually picked
+    const regionSel = document.getElementById('region').value;
+    const regionCustom = document.getElementById('regionCustom').value.trim();
+    const region = regionSel === '__custom' ? regionCustom : regionSel;
     const providerSel = document.getElementById('provider').value;
     const providerCustom = document.getElementById('providerCustom').value.trim();
     const veh = getVehicleFormData();
     const vehicleMpgRaw = document.getElementById('vehicleMpg').value;
     const vehicleMpg = vehicleMpgRaw !== '' ? parseFloat(vehicleMpgRaw) : null;
+    const gasPriceRaw = document.getElementById('gasPricePerGallon').value;
+    const gasPricePerGallon = gasPriceRaw !== '' ? parseFloat(gasPriceRaw) : null;
     const firstName = document.getElementById('firstName').value.trim();
     const lastName = document.getElementById('lastName').value.trim();
     const phone = document.getElementById('phone').value.trim();
@@ -900,13 +1083,15 @@
     const s = parseFloat(mileageStart), e = parseFloat(mileageEnd);
     const miles = (!isNaN(s) && !isNaN(e) && e >= s) ? (e - s).toFixed(1) : null;
     const totalPrice = services.reduce((sum, sv) => sum + sv.price, 0);
+    const fuelGallons = (miles !== null && vehicleMpg) ? (parseFloat(miles) / vehicleMpg) : null;
+    const fuelCostEstimate = (fuelGallons !== null && gasPricePerGallon) ? fuelGallons * gasPricePerGallon : null;
 
     const wasEditing = !!editingId;
     const existing = wasEditing ? entries.find(en => en.id === editingId) : null;
 
     const ticketData = {
       id: wasEditing ? editingId : uid(),
-      createdAt: composeDateISO(document.getElementById('callDate').value),
+      createdAt: wasEditing && existing ? existing.createdAt : composeDateISO(document.getElementById('callDate').value),
       updatedAt: wasEditing ? new Date().toISOString() : undefined,
       mileageStart: s,
       mileageEnd: e,
@@ -915,6 +1100,9 @@
       vehicle: veh.display,
       vehicleNickname: veh.nickname,
       vehicleMpg: vehicleMpg,
+      gasPricePerGallon: gasPricePerGallon,
+      fuelGallons: fuelGallons,
+      fuelCostEstimate: fuelCostEstimate,
       vehicleYear: veh.year,
       vehicleMake: veh.make,
       vehicleModel: veh.model,
@@ -925,28 +1113,32 @@
       email: email,
       paymentMethod: paymentMethod,
       technician: technician,
+      region: region,
       notes: notes
     };
 
+    ticketData.submitted = false;
+
+    // Save locally first — instant, works with zero signal
     if(wasEditing){
       const idx = entries.findIndex(en => en.id === editingId);
-      if(idx !== -1) entries[idx] = ticketData; else entries.unshift(ticketData);
+      if(idx !== -1) entries[idx] = ticketData; else entries.push(ticketData);
     } else {
-      entries.unshift(ticketData);
+      entries.push(ticketData);
     }
     sortEntries();
-    persist();
+    saveLocal();
 
     // reset form
-    ['mileageStart','mileageEnd','providerCustom','firstName','lastName','phone','email','paymentMethodCustom','notes','technicianCustom']
+    ['mileageStart','mileageEnd','providerCustom','firstName','lastName','phone','email','paymentMethodCustom','notes','regionCustom']
       .forEach(id => document.getElementById(id).value = '');
     document.getElementById('provider').value = '';
     document.getElementById('providerCustomWrap').classList.add('hidden');
+    document.getElementById('region').value = '';
+    document.getElementById('regionCustomWrap').classList.add('hidden');
     document.getElementById('milesHint').classList.add('hidden');
     document.getElementById('paymentMethod').value = '';
     document.getElementById('paymentMethodCustomWrap').classList.add('hidden');
-    document.getElementById('technician').value = '';
-    document.getElementById('technicianCustomWrap').classList.add('hidden');
     resetVehicleFields();
     resetCallDate();
     document.getElementById('serviceRows').innerHTML = '';
@@ -957,9 +1149,17 @@
     document.getElementById('saveBtn').textContent = 'Save Ticket';
     document.getElementById('cancelEditBtn').classList.add('hidden');
 
-    updateHeaderCount();
-    setView('log');
+    setView('log'); // instant — local data is already saved, no need to wait on network
     showToast(wasEditing ? 'Ticket updated ✓' : 'Ticket saved ✓');
+
+    // Try to sync in the background; doesn't block the person from moving on
+    try {
+      await postToSheet({ action: wasEditing ? 'update' : 'create', ticket: ticketData });
+      const idx = entries.findIndex(en => en.id === ticketData.id);
+      if(idx !== -1){ entries[idx].submitted = true; saveLocal(); }
+    } catch(err) {
+      // still offline or Sheet unreachable — stays pending, will sync next time setView('log'/'summary') runs
+    }
   }
 
   function startEdit(id){
@@ -971,24 +1171,24 @@
       ? new Date(entry.createdAt).toISOString().slice(0, 10)
       : todayDateString();
 
+    const regionSelect = document.getElementById('region');
+    const knownRegions = Array.from(regionSelect.options).map(o => o.value).filter(v => v && v !== '__custom');
+    document.getElementById('regionCustom').value = '';
+    if(entry.region && knownRegions.includes(entry.region)){
+      regionSelect.value = entry.region;
+      document.getElementById('regionCustomWrap').classList.add('hidden');
+    } else if(entry.region){
+      regionSelect.value = '__custom';
+      document.getElementById('regionCustomWrap').classList.remove('hidden');
+      document.getElementById('regionCustom').value = entry.region;
+    } else {
+      regionSelect.value = '';
+      document.getElementById('regionCustomWrap').classList.add('hidden');
+    }
+
     document.getElementById('mileageStart').value = entry.mileageStart ?? '';
     document.getElementById('mileageEnd').value = entry.mileageEnd ?? '';
     updateMiles();
-
-    const technicianSelect = document.getElementById('technician');
-    const knownTechs = Array.from(technicianSelect.options).map(o => o.value).filter(v => v && v !== '__custom');
-    document.getElementById('technicianCustom').value = '';
-    if(entry.technician && knownTechs.includes(entry.technician)){
-      technicianSelect.value = entry.technician;
-      document.getElementById('technicianCustomWrap').classList.add('hidden');
-    } else if(entry.technician){
-      technicianSelect.value = '__custom';
-      document.getElementById('technicianCustomWrap').classList.remove('hidden');
-      document.getElementById('technicianCustom').value = entry.technician;
-    } else {
-      technicianSelect.value = '';
-      document.getElementById('technicianCustomWrap').classList.add('hidden');
-    }
 
     const providerSelect = document.getElementById('provider');
     const knownProviders = Array.from(providerSelect.options).map(o => o.value).filter(v => v && v !== '__custom');
@@ -1017,6 +1217,8 @@
       document.getElementById('vehicleNicknameCustom').value = entry.vehicleNickname;
     }
     document.getElementById('vehicleMpg').value = entry.vehicleMpg != null ? entry.vehicleMpg : '';
+    document.getElementById('gasPricePerGallon').value = entry.gasPricePerGallon != null ? entry.gasPricePerGallon : '';
+    updateFuelCostEstimate();
     document.getElementById('vehicleYear').value = entry.vehicleYear || '';
     document.getElementById('legacyVehicle').value = entry.vehicle || '';
     if(entry.vehicleMake && MAKE_MODELS[entry.vehicleMake]){
@@ -1112,15 +1314,15 @@
     editingId = null;
     document.getElementById('saveBtn').textContent = 'Save Ticket';
     document.getElementById('cancelEditBtn').classList.add('hidden');
-    ['mileageStart','mileageEnd','providerCustom','firstName','lastName','phone','email','paymentMethodCustom','notes','technicianCustom']
+    ['mileageStart','mileageEnd','providerCustom','firstName','lastName','phone','email','paymentMethodCustom','notes','regionCustom']
       .forEach(id => document.getElementById(id).value = '');
     document.getElementById('provider').value = '';
     document.getElementById('providerCustomWrap').classList.add('hidden');
+    document.getElementById('region').value = '';
+    document.getElementById('regionCustomWrap').classList.add('hidden');
     document.getElementById('milesHint').classList.add('hidden');
     document.getElementById('paymentMethod').value = '';
     document.getElementById('paymentMethodCustomWrap').classList.add('hidden');
-    document.getElementById('technician').value = '';
-    document.getElementById('technicianCustomWrap').classList.add('hidden');
     document.getElementById('errorMsg').classList.add('hidden');
     resetVehicleFields();
     resetCallDate();
@@ -1137,17 +1339,27 @@
     setTimeout(() => t.classList.add('hidden'), 2500);
   }
 
-  function confirmDelete(id){
+  async function confirmDelete(id){
     if(confirm('Delete this ticket? This can\'t be undone.')){
       deleteEntry(id);
     }
   }
 
   function deleteEntry(id){
+    const wasSubmitted = entries.some(e => e.id === id && e.submitted);
     entries = entries.filter(e => e.id !== id);
-    persist();
+    saveLocal();
+    if(wasSubmitted){
+      addPendingDelete(id); // needs to also be removed from the Sheet
+    }
     renderLog();
     updateHeaderCount();
+
+    if(wasSubmitted){
+      postToSheet({ action: 'delete', id: id })
+        .then(() => removePendingDelete(id))
+        .catch(() => { /* still offline — will retry next sync */ });
+    }
   }
 
   function fmtMoney(n){ return '$' + n.toFixed(2); }
@@ -1156,16 +1368,53 @@
     return d.toLocaleDateString(undefined, { month:'short', day:'numeric', year:'numeric' });
   }
 
+  function renderSyncStatusBar(){
+    const bar = document.getElementById('syncStatusBar');
+    const pendingCount = entries.filter(e => !e.submitted).length + getPendingDeletes().length;
+
+    if(syncStatus === 'unconfigured'){
+      bar.textContent = 'Not connected to Google Sheets yet — working from this device only.';
+      bar.style.background = '#FFF4E0';
+      bar.style.color = '#8A5A00';
+      bar.classList.remove('hidden');
+    } else if(isSyncing){
+      bar.textContent = 'Syncing…';
+      bar.style.background = '#EAF1FB';
+      bar.style.color = '#2E4DA6';
+      bar.classList.remove('hidden');
+    } else if(syncStatus === 'offline' || pendingCount > 0){
+      bar.textContent = pendingCount > 0
+        ? `Offline or unreachable — ${pendingCount} change${pendingCount === 1 ? '' : 's'} waiting to sync.`
+        : 'Offline — showing data saved on this device.';
+      bar.style.background = '#FDECEC';
+      bar.style.color = '#8A2C2C';
+      bar.classList.remove('hidden');
+    } else if(syncStatus === 'synced'){
+      bar.classList.add('hidden');
+    } else {
+      bar.classList.add('hidden');
+    }
+  }
+
+  function myEntries(){
+    if(currentUser === 'Master') return entries; // combined view across everyone
+    return entries.filter(e => e.technician === currentUser);
+  }
+
   function renderLog(){
     const list = document.getElementById('logList');
     const empty = document.getElementById('emptyState');
-    if(entries.length === 0){
+    const visible = myEntries();
+
+    renderSyncStatusBar();
+
+    if(visible.length === 0){
       list.innerHTML = '';
       empty.classList.remove('hidden');
       return;
     }
     empty.classList.add('hidden');
-    list.innerHTML = entries.map(e => {
+    list.innerHTML = visible.map(e => {
       const contactBits = [e.phone, e.email].filter(Boolean).join(' · ');
       const customerLine = e.customer && e.customer.trim() !== ''
         ? `${escapeHtml(e.customer)}${contactBits ? ' <span>· ' + escapeHtml(contactBits) + '</span>' : ''}`
@@ -1199,11 +1448,13 @@
                 </div>`;
               }).join('')}
             </div>
-            ${(e.miles || e.paymentMethod || e.technician) ? `
+            ${(e.miles || e.paymentMethod || e.fuelCostEstimate != null || currentUser === 'Master') ? `
             <div class="ticket-meta">
-              ${e.technician ? `<span><span class="label">Tech</span> ${escapeHtml(e.technician)}</span>` : ''}
+              ${currentUser === 'Master' && e.technician ? `<span><span class="label">Logged by</span> ${escapeHtml(e.technician)}</span>` : ''}
+              ${currentUser === 'Master' && e.region ? `<span><span class="label">Region</span> ${escapeHtml(e.region)}</span>` : ''}
               ${e.miles ? `<span><span class="label">Miles</span> ${e.miles}</span>` : ''}
               ${e.paymentMethod ? `<span><span class="label">Paid via</span> ${escapeHtml(e.paymentMethod)}</span>` : ''}
+              ${e.fuelCostEstimate != null ? `<span><span class="label">Est. fuel</span> ${fmtMoney(e.fuelCostEstimate)}</span>` : ''}
             </div>` : ''}
             ${e.notes ? `<div style="font-size:12.5px; color:var(--muted); font-style:italic; margin-top:6px;">${escapeHtml(e.notes)}</div>` : ''}
             <div class="ticket-bottom">
@@ -1227,9 +1478,10 @@
   }
 
   function renderSummary(){
-    const jobs = entries.length;
-    const revenue = entries.reduce((sum, e) => sum + (e.totalPrice || 0), 0);
-    const miles = entries.reduce((sum, e) => sum + (parseFloat(e.miles) || 0), 0);
+    const visible = myEntries();
+    const jobs = visible.length;
+    const revenue = visible.reduce((sum, e) => sum + (e.totalPrice || 0), 0);
+    const miles = visible.reduce((sum, e) => sum + (parseFloat(e.miles) || 0), 0);
     const avg = jobs ? revenue / jobs : 0;
 
     document.getElementById('sumJobs').textContent = jobs;
@@ -1237,14 +1489,25 @@
     document.getElementById('sumAvg').textContent = fmtMoney(avg);
     document.getElementById('sumMiles').textContent = miles.toFixed(1);
 
-    const byService = {}, byProvider = {}, byTechnician = {};
+    const byService = {};
+    const byProvider = {};
+    const byRegion = {};
     const byMonth = {}, byQuarter = {};
-    entries.forEach(e => {
+    const byMonthRegion = {}, byQuarterRegion = {};
+    visible.forEach(e => {
       (e.services || []).forEach(sv => {
-        byService[sv.service] = (byService[sv.service] || 0) + 1;
+        if(!byService[sv.service]) byService[sv.service] = { count: 0, revenue: 0 };
+        byService[sv.service].count++;
+        byService[sv.service].revenue += (sv.price || 0);
       });
-      byProvider[e.provider] = (byProvider[e.provider] || 0) + 1;
-      if(e.technician) byTechnician[e.technician] = (byTechnician[e.technician] || 0) + 1;
+      if(!byProvider[e.provider]) byProvider[e.provider] = { count: 0, revenue: 0 };
+      byProvider[e.provider].count++;
+      byProvider[e.provider].revenue += (e.totalPrice || 0);
+
+      const regionKey = e.region || 'Not set';
+      if(!byRegion[regionKey]) byRegion[regionKey] = { count: 0, revenue: 0 };
+      byRegion[regionKey].count++;
+      byRegion[regionKey].revenue += (e.totalPrice || 0);
 
       const d = new Date(e.createdAt);
       if(!isNaN(d)){
@@ -1253,6 +1516,10 @@
         if(!byMonth[mKey]) byMonth[mKey] = { label: mLabel, count: 0, revenue: 0 };
         byMonth[mKey].count++;
         byMonth[mKey].revenue += (e.totalPrice || 0);
+        if(!byMonthRegion[mKey]) byMonthRegion[mKey] = { label: mLabel, regions: {} };
+        if(!byMonthRegion[mKey].regions[regionKey]) byMonthRegion[mKey].regions[regionKey] = { count: 0, revenue: 0 };
+        byMonthRegion[mKey].regions[regionKey].count++;
+        byMonthRegion[mKey].regions[regionKey].revenue += (e.totalPrice || 0);
 
         const q = Math.floor(d.getMonth() / 3) + 1;
         const qKey = d.getFullYear() + '-Q' + q;
@@ -1260,14 +1527,39 @@
         if(!byQuarter[qKey]) byQuarter[qKey] = { label: qLabel, count: 0, revenue: 0 };
         byQuarter[qKey].count++;
         byQuarter[qKey].revenue += (e.totalPrice || 0);
+        if(!byQuarterRegion[qKey]) byQuarterRegion[qKey] = { label: qLabel, regions: {} };
+        if(!byQuarterRegion[qKey].regions[regionKey]) byQuarterRegion[qKey].regions[regionKey] = { count: 0, revenue: 0 };
+        byQuarterRegion[qKey].regions[regionKey].count++;
+        byQuarterRegion[qKey].regions[regionKey].revenue += (e.totalPrice || 0);
       }
     });
 
-    document.getElementById('byService').innerHTML = renderBreakdown(byService);
-    document.getElementById('byProvider').innerHTML = renderBreakdown(byProvider);
-    document.getElementById('byTechnician').innerHTML = renderBreakdown(byTechnician);
-    document.getElementById('byMonth').innerHTML = renderTimeBreakdown(byMonth);
-    document.getElementById('byQuarter').innerHTML = renderTimeBreakdown(byQuarter);
+    document.getElementById('byService').innerHTML = renderCountRevenueBreakdown(byService);
+    document.getElementById('byProvider').innerHTML = renderCountRevenueBreakdown(byProvider);
+    document.getElementById('byRegionCard').classList.toggle('hidden', currentUser !== 'Master');
+    if(currentUser === 'Master'){
+      document.getElementById('byRegion').innerHTML = renderCountRevenueBreakdown(byRegion);
+      document.getElementById('byMonth').innerHTML = renderTimeBreakdownByRegion(byMonthRegion);
+      document.getElementById('byQuarter').innerHTML = renderTimeBreakdownByRegion(byQuarterRegion);
+    } else {
+      document.getElementById('byMonth').innerHTML = renderTimeBreakdown(byMonth);
+      document.getElementById('byQuarter').innerHTML = renderTimeBreakdown(byQuarter);
+    }
+  }
+
+  function renderCountRevenueBreakdown(obj){
+    const keys = Object.keys(obj);
+    if(keys.length === 0) return '<div class="no-data">No data yet.</div>';
+    return keys.sort((a, b) => obj[b].revenue - obj[a].revenue).map(k => {
+      const item = obj[k];
+      return `<div class="breakdown-row">
+        <span class="k">${escapeHtml(k)}</span>
+        <span class="v-stack">
+          <span class="v-jobs">${item.count} job${item.count === 1 ? '' : 's'}</span>
+          <span class="v-revenue">${fmtMoney(item.revenue)}</span>
+        </span>
+      </div>`;
+    }).join('');
   }
 
   function renderTimeBreakdown(obj){
@@ -1276,6 +1568,28 @@
     return keys.map(k => {
       const item = obj[k];
       return `<div class="breakdown-row"><span class="k">${escapeHtml(item.label)}</span><span class="v">${item.count} job${item.count === 1 ? '' : 's'} · ${fmtMoney(item.revenue)}</span></div>`;
+    }).join('');
+  }
+
+  // Same idea as renderTimeBreakdown, but splits each period into its regions
+  // side by side — this is the actual Tallahassee-vs-Central-FL comparison.
+  function renderTimeBreakdownByRegion(obj){
+    const keys = Object.keys(obj).sort().reverse();
+    if(keys.length === 0) return '<div class="no-data">No data yet.</div>';
+    return keys.map(k => {
+      const item = obj[k];
+      const regionKeys = Object.keys(item.regions).sort();
+      const regionRows = regionKeys.map(r => {
+        const ri = item.regions[r];
+        return `<div style="display:flex; justify-content:space-between; padding:3px 0 3px 12px; font-size:12.5px; color:var(--muted);">
+          <span>${escapeHtml(r)}</span>
+          <span>${ri.count} job${ri.count === 1 ? '' : 's'} · ${fmtMoney(ri.revenue)}</span>
+        </div>`;
+      }).join('');
+      return `<div style="padding:8px 0; border-bottom:1px solid #F1E6EC;">
+        <div style="font-weight:700; font-size:13.5px; color:var(--text); margin-bottom:2px;">${escapeHtml(item.label)}</div>
+        ${regionRows}
+      </div>`;
     }).join('');
   }
 
@@ -1288,7 +1602,7 @@
   }
 
   function updateHeaderCount(){
-    document.getElementById('headerCount').textContent = entries.length;
+    document.getElementById('headerCount').textContent = myEntries().length;
   }
 
   function csvEscape(val){
@@ -1297,83 +1611,15 @@
     return s;
   }
 
-  function exportBackup(){
-    if(entries.length === 0){
-      alert('No jobs logged yet — nothing to back up.');
-      return;
-    }
-    const blob = new Blob([JSON.stringify(entries, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'road-service-log-backup-' + todayDateString() + '.json';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-  }
-
-  function triggerImport(){
-    document.getElementById('importFileInput').click();
-  }
-
-  function handleImportFile(event){
-    const file = event.target.files[0];
-    if(!file) return;
-    const reader = new FileReader();
-    reader.onload = function(e){
-      let imported;
-      try {
-        imported = JSON.parse(e.target.result);
-        if(!Array.isArray(imported)) throw new Error('not an array');
-      } catch(err){
-        alert("Could not read that file — make sure it's a Road Service Log backup (.json) file.");
-        event.target.value = '';
-        return;
-      }
-      imported = imported.map(migrateEntry);
-      const doMerge = confirm(
-        'Tap OK to MERGE this backup into your current data (adds anything not already here — safe, nothing gets deleted).\n\n' +
-        'Tap Cancel to instead REPLACE all current data with this backup (your current tickets on this device will be lost).'
-      );
-      if(doMerge){
-        const existingIds = new Set(entries.map(en => en.id));
-        let added = 0;
-        imported.forEach(en => {
-          if(en && en.id && !existingIds.has(en.id)){
-            entries.push(en);
-            existingIds.add(en.id);
-            added++;
-          }
-        });
-        sortEntries();
-        persist();
-        updateHeaderCount();
-        renderLog();
-        renderSummary();
-        alert('Merged — added ' + added + ' ticket(s). Total now: ' + entries.length + '.');
-      } else {
-        entries = imported;
-        sortEntries();
-        persist();
-        updateHeaderCount();
-        renderLog();
-        renderSummary();
-        alert('Replaced — loaded ' + entries.length + ' ticket(s).');
-      }
-      event.target.value = '';
-    };
-    reader.readAsText(file);
-  }
-
   function exportCsv(){
-    if(entries.length === 0){
+    const visible = myEntries();
+    if(visible.length === 0){
       alert('No jobs logged yet — nothing to export.');
       return;
     }
-    const headers = ['Date','Technician','Provider','Vehicle','Vehicle Name','Vehicle MPG','Year','Make','Model','Service','Service Price','Call Total','Payment Method','Mileage Start','Mileage End','Miles Driven','Customer Name','Customer Phone','Customer Email','Notes'];
+    const headers = ['Date','Technician','Region','Provider','Vehicle','Vehicle Name','Vehicle MPG','Gas Price Per Gallon','Fuel Gallons','Estimated Fuel Cost','Year','Make','Model','Service','Service Price','Call Total','Payment Method','Mileage Start','Mileage End','Miles Driven','Customer Name','Customer Phone','Customer Email','Notes'];
     const rows = [];
-    entries.forEach(e => {
+    visible.forEach(e => {
       (e.services || []).forEach(sv => {
         const isDiscount = sv.service === 'Discount';
         const serviceLabel = isDiscount
@@ -1382,10 +1628,14 @@
         rows.push([
           fmtDate(e.createdAt),
           e.technician || '',
+          e.region || '',
           e.provider,
           e.vehicle,
           e.vehicleNickname || '',
           e.vehicleMpg != null ? e.vehicleMpg : '',
+          e.gasPricePerGallon != null ? e.gasPricePerGallon.toFixed(2) : '',
+          e.fuelGallons != null ? e.fuelGallons.toFixed(2) : '',
+          e.fuelCostEstimate != null ? e.fuelCostEstimate.toFixed(2) : '',
           e.vehicleYear || '',
           e.vehicleMake || '',
           e.vehicleModel || '',
@@ -1416,12 +1666,76 @@
     URL.revokeObjectURL(url);
   }
 
-  // init
-  loadEntries();
-  populateMakeOptions();
-  resetCallDate();
-  updateHeaderCount();
-  renderLog();
+  // ── Login / session ──
+  async function attemptLogin(){
+    const val = document.getElementById('pinInput').value.trim();
+    const errBox = document.getElementById('pinError');
+    const btn = document.getElementById('pinSubmitBtn');
+    if(!val){
+      errBox.textContent = 'Enter a PIN.';
+      errBox.classList.remove('hidden');
+      return;
+    }
+    btn.disabled = true;
+    btn.textContent = 'Checking…';
+    try {
+      const result = await postToSheet({ action: 'login', pin: val });
+      errBox.classList.add('hidden');
+      applyLogin(result.name);
+    } catch(err) {
+      errBox.textContent = apiConfigured()
+        ? (err.message || 'Incorrect PIN. Try again.')
+        : 'Not connected to Google Sheets yet — ask Abel to finish setup.';
+      errBox.classList.remove('hidden');
+    }
+    btn.disabled = false;
+    btn.textContent = 'Log In';
+  }
+
+  function applyLogin(name){
+    currentUser = name;
+    sessionStorage.setItem(SESSION_KEY, JSON.stringify({ name }));
+    document.getElementById('loginScreen').classList.add('hidden');
+    document.getElementById('appWrapper').classList.remove('hidden');
+    document.getElementById('loggedInAs').textContent = name;
+    startApp();
+  }
+
+  function logout(){
+    sessionStorage.removeItem(SESSION_KEY);
+    currentUser = null;
+    document.getElementById('appWrapper').classList.add('hidden');
+    document.getElementById('loginScreen').classList.remove('hidden');
+    document.getElementById('pinInput').value = '';
+    document.getElementById('pinError').classList.add('hidden');
+  }
+
+  function startApp(){
+    populateMakeOptions();
+    resetCallDate();
+    loadLocal();          // instant — always works, even with zero signal
+    updateHeaderCount();
+    renderLog();
+    syncWithSheet().then(() => {   // background sync — updates the view when/if it succeeds
+      renderLog();
+      updateHeaderCount();
+    });
+  }
+
+  document.getElementById('pinInput').addEventListener('keydown', function(e){
+    if(e.key === 'Enter') attemptLogin();
+  });
+
+  // init — restore an existing session if there is one, otherwise show the login screen
+  (function initSession(){
+    try {
+      const saved = sessionStorage.getItem(SESSION_KEY);
+      if(saved){
+        const { name } = JSON.parse(saved);
+        if(name){ applyLogin(name); return; }
+      }
+    } catch(err){ /* fall through to login screen */ }
+  })();
 </script>
 
 </body>
