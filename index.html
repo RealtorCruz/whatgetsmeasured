@@ -236,6 +236,25 @@
     display: block;
   }
 
+  .hero-grid {
+    display: grid;
+    grid-template-columns: 1.1fr 0.9fr;
+    gap: 3rem;
+    align-items: center;
+  }
+
+  .hero-photo img {
+    width: 100%;
+    border-radius: 8px;
+    display: block;
+    box-shadow: 0 30px 60px rgba(0,0,0,0.35);
+  }
+
+  @media (max-width: 860px) {
+    .hero-grid { grid-template-columns: 1fr; }
+    .hero-photo { order: -1; margin-bottom: 1rem; }
+  }
+
   /* ---------- TICK STRIP (signature element) ---------- */
   .tick-strip {
     background: var(--paper);
@@ -309,62 +328,108 @@
     max-width: 620px;
   }
 
-  /* Pillars */
-  .pillars {
+  /* Phase bridge line between problem section and the two service sections */
+  .phase-bridge {
     background: var(--paper);
+    padding: 2.4rem 6% 0.5rem;
+    text-align: center;
   }
 
-  .pillar-grid {
+  .phase-bridge p {
+    max-width: 640px;
+    margin: 0 auto;
+    font-size: 1.05rem;
+    color: var(--steel);
+  }
+
+  .phase-bridge strong { color: var(--ink); }
+
+  /* Service sections (Growth Consulting / Custom Tools) — now full standalone sections */
+  .service-section { padding: 5.5rem 6%; }
+  .service-section.consulting-section { background: var(--paper); }
+  .service-section.tools-section { background: var(--white); }
+
+  .service-inner {
+    max-width: 1180px;
+    margin: 0 auto;
     display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 2rem;
-    margin-top: 2.5rem;
+    grid-template-columns: 1.1fr 0.9fr;
+    gap: 3.5rem;
+    align-items: center;
   }
 
-  .pillar {
-    background: var(--white);
-    border: 1px solid var(--line);
-    border-radius: 4px;
-    padding: 2.4rem 2.2rem;
-    position: relative;
+  .service-section.tools-section .service-inner {
+    grid-template-columns: 0.9fr 1.1fr;
   }
 
-  .pillar-num {
-    position: absolute;
-    top: -14px;
-    left: 2.2rem;
+  .service-section.tools-section .service-text { order: 2; }
+  .service-section.tools-section .service-image { order: 1; }
+
+  .service-num {
+    display: inline-block;
     background: var(--ink);
     color: var(--gauge);
     font-family: 'IBM Plex Mono', monospace;
-    font-size: 0.72rem;
-    padding: 0.3rem 0.7rem;
+    font-size: 0.75rem;
+    padding: 0.35rem 0.8rem;
     border-radius: 2px;
     letter-spacing: 0.08em;
+    margin-bottom: 1.2rem;
   }
 
-  .pillar h3 {
-    font-size: 1.4rem;
-    margin: 0.9rem 0 0.9rem;
+  .service-text h2 {
+    font-size: clamp(2rem, 4vw, 2.9rem);
+    margin: 0 0 1.4rem;
+    max-width: 560px;
   }
 
-  .pillar p {
+  .service-text p.service-lead {
+    font-size: 1.15rem;
     color: var(--steel);
-    margin-bottom: 1.1rem;
-    font-size: 0.98rem;
+    max-width: 560px;
+    margin-bottom: 1.8rem;
   }
 
-  .pillar ul {
+  .service-text ul {
     list-style: none;
     display: flex;
     flex-direction: column;
-    gap: 0.55rem;
+    gap: 0.9rem;
+    margin-bottom: 2rem;
   }
 
-  .pillar li {
-    font-size: 0.92rem;
+  .service-text li {
+    font-size: 1.02rem;
     color: var(--ink);
-    padding-left: 1.1rem;
+    padding-left: 1.4rem;
     position: relative;
+    max-width: 540px;
+  }
+
+  .service-image img {
+    width: 100%;
+    aspect-ratio: 4 / 3;
+    object-fit: cover;
+    border-radius: 8px;
+    display: block;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.15);
+  }
+
+  @media (max-width: 860px) {
+    .service-inner,
+    .service-section.tools-section .service-inner {
+      grid-template-columns: 1fr;
+      gap: 2rem;
+    }
+    .service-section.tools-section .service-text { order: 1; }
+    .service-section.tools-section .service-image { order: 2; }
+  }
+
+  .service-text li::before {
+    content: '—';
+    position: absolute;
+    left: 0;
+    color: var(--gauge);
   }
 
   .pillar li::before {
@@ -570,21 +635,28 @@
 
 <header class="hero">
   <div class="hero-inner">
-    <a href="#" class="hero-mark"><img src="logo-transparent.png" alt="What Gets Measured"></a>
-    <span class="eyebrow">For new &amp; small business owners</span>
-    <h1>What gets measured, <em>gets improved</em>.</h1>
-    <p class="sub">Most small business owners are too close to their own operation to see what's actually working, what's leaking money, and what to do next. We give you the outside view — then build you the tools to keep it.</p>
-    <div class="mono" style="letter-spacing:0.12em; font-size:0.78rem; color:var(--gauge-dim); margin-bottom:2rem; text-transform:uppercase;">Measure more. &nbsp;|&nbsp; Understand more. &nbsp;|&nbsp; Grow more.</div>
+    <div class="hero-grid">
+      <div class="hero-text">
+        <a href="#" class="hero-mark"><img src="logo-transparent.png" alt="What Gets Measured"></a>
+        <span class="eyebrow">For new &amp; small business owners</span>
+        <h1>What gets measured, <em>gets improved</em>.</h1>
+        <p class="sub">Most small business owners are too close to their own operation to see what's actually working, what's leaking money, and what to do next. We give you the outside view — then build you the tools to keep it.</p>
+        <div class="mono" style="letter-spacing:0.12em; font-size:0.78rem; color:var(--gauge-dim); margin-bottom:2rem; text-transform:uppercase;">Measure more. &nbsp;|&nbsp; Understand more. &nbsp;|&nbsp; Grow more.</div>
 
-    <div class="path-cards">
-      <a href="#serve-new" class="path-card">
-        <span class="mono">JUST STARTING OUT</span>
-        <strong>Get a clear starting point →</strong>
-      </a>
-      <a href="#serve-stuck" class="path-card">
-        <span class="mono">FEEL STUCK OR PLATEAUED</span>
-        <strong>Find what's actually holding you back →</strong>
-      </a>
+        <div class="path-cards">
+          <a href="#serve-new" class="path-card">
+            <span class="mono">JUST STARTING OUT</span>
+            <strong>Get a clear starting point →</strong>
+          </a>
+          <a href="#serve-stuck" class="path-card">
+            <span class="mono">FEEL STUCK OR PLATEAUED</span>
+            <strong>Find what's actually holding you back →</strong>
+          </a>
+        </div>
+      </div>
+      <div class="hero-photo">
+        <img src="images/hero-consult.png" alt="Going through a business's real numbers together in the shop">
+      </div>
     </div>
   </div>
 </header>
@@ -636,33 +708,44 @@
   </div>
 </section>
 
-<section class="block pillars" id="ways-we-help">
-  <div class="block-inner">
-    <span class="eyebrow">Two ways we help</span>
-    <h2 style="font-size:clamp(1.8rem,3.4vw,2.5rem); margin-top:1rem;">Same thesis, two different deliverables.</h2>
+<div class="phase-bridge">
+  <p>It doesn't matter if you're <strong>just starting out</strong> or you've been doing this for years — one of the two paths below is probably where you fit.</p>
+</div>
 
-    <div class="pillar-grid">
-      <div class="pillar" id="consulting">
-        <span class="pillar-num">GROWTH CONSULTING</span>
-        <h3>You're already generating data. We show you how to use it.</h3>
-        <p>Most owners are sitting on more information than they realize — job history, repeat customers, what sells and when. We show you how to actually use what you're already getting to grow.</p>
-        <ul>
-          <li>A plain-English read on your numbers, not a lecture</li>
-          <li>Practical moves you can act on — like a quarterly newsletter to stay in front of customers, once you know who they are and what they buy</li>
-          <li>A growth path built around what you have, not a generic template</li>
-        </ul>
-      </div>
+<section class="service-section consulting-section" id="consulting">
+  <div class="service-inner">
+    <div class="service-text">
+      <span class="service-num mono">GROWTH CONSULTING</span>
+      <h2>You're already generating data. We show you how to use it.</h2>
+      <p class="service-lead">Most owners are sitting on more information than they realize — job history, repeat customers, what sells and when. We show you how to actually use what you're already getting to grow.</p>
+      <ul>
+        <li>A plain-English read on your numbers, not a lecture</li>
+        <li>Practical moves you can act on — like a quarterly newsletter to stay in front of customers, once you know who they are and what they buy</li>
+        <li>A growth path built around what you have, not a generic template</li>
+      </ul>
+      <a href="#contact" class="btn-dark">Book a Free Assessment</a>
+    </div>
+    <div class="service-image">
+      <img src="images/consulting-landscaping-truck.png" alt="Business owner reviewing invoices and numbers in his truck">
+    </div>
+  </div>
+</section>
 
-      <div class="pillar" id="tools">
-        <span class="pillar-num">CUSTOM TOOLS</span>
-        <h3>Simple systems built around your actual day</h3>
-        <p>Off-the-shelf software is built for someone else's business. We build a tool around exactly how you work, so the data you need is captured automatically — not something you have to remember to log.</p>
-        <ul>
-          <li><strong>Solo App</strong> — a simple app that sits right on your home screen, built for one-person operations. One-time build starting at <strong>$300</strong>.</li>
-          <li><strong>Custom Hub</strong> — for businesses with a team, a central place to track your crew and see it all in one spot.</li>
-          <li>No bloated monthly fee for tools you'll never touch</li>
-        </ul>
-      </div>
+<section class="service-section tools-section" id="tools">
+  <div class="service-inner">
+    <div class="service-text">
+      <span class="service-num mono">CUSTOM TOOLS</span>
+      <h2>Simple systems built around your actual day</h2>
+      <p class="service-lead">Off-the-shelf software is built for someone else's business. We build a tool around exactly how you work, so the data you need is captured automatically — not something you have to remember to log.</p>
+      <ul>
+        <li><strong>Solo App</strong> — a simple app that sits right on your home screen, built for one-person operations. One-time build starting at <strong>$300</strong>.</li>
+        <li><strong>Custom Hub</strong> — for businesses with a team, a central place to track your crew and see it all in one spot.</li>
+        <li>No bloated monthly fee for tools you'll never touch</li>
+      </ul>
+      <a href="#contact" class="btn-dark">Book a Free Assessment</a>
+    </div>
+    <div class="service-image">
+      <img src="images/tools-roadservice-phone.png" alt="Technician logging a job on the Road Service Log app in the field">
     </div>
   </div>
 </section>
@@ -745,12 +828,14 @@
 
     <div class="serve-grid">
       <div class="serve-card">
+        <img src="images/serve-starting-out.png" alt="A brand new business setting up on day one" style="width:100%; border-radius:6px; margin-bottom:1.2rem; display:block;">
         <span class="mono">JUST STARTING OUT</span>
         <h3>Build it right from day one</h3>
         <p>You're setting things up now. We help you decide what to track from the start, so you're never guessing what your business is actually telling you.</p>
         <a href="#contact" class="btn-dark" style="margin-top:0.8rem; padding:0.7rem 1.4rem; font-size:0.88rem;">Book a Free Assessment</a>
       </div>
       <div class="serve-card" id="serve-stuck">
+        <img src="images/serve-stuck.png" alt="An established business owner feeling worn down and stuck" style="width:100%; border-radius:6px; margin-bottom:1.2rem; display:block;">
         <span class="mono">FEEL STUCK OR PLATEAUED</span>
         <h3>Find what's actually holding you back</h3>
         <p>You've been running it a while and something's not moving. We find the specific thing — not "work harder," an actual answer — and help you fix it.</p>
