@@ -234,6 +234,19 @@
         <input type="date" id="callDate">
       </label>
 
+      <div id="jobTimeWrap" class="hidden">
+        <div class="row2">
+          <label class="field">
+            <span class="field-label">Job Start Time (optional)</span>
+            <input type="time" id="jobStartTime">
+          </label>
+          <label class="field">
+            <span class="field-label">Job End Time (optional)</span>
+            <input type="time" id="jobEndTime">
+          </label>
+        </div>
+      </div>
+
       <label class="field">
         <span class="field-label">Region</span>
         <select id="region" onchange="toggleCustom('region')">
@@ -1116,6 +1129,8 @@
     const mileageStart = document.getElementById('mileageStart').value;
     const mileageEnd = document.getElementById('mileageEnd').value;
     const technician = currentUser; // auto-assigned from login, not manually picked
+    const jobStartTime = document.getElementById('jobStartTime').value || null;
+    const jobEndTime = document.getElementById('jobEndTime').value || null;
     const regionSel = document.getElementById('region').value;
     const regionCustom = document.getElementById('regionCustom').value.trim();
     const region = regionSel === '__custom' ? regionCustom : regionSel;
@@ -1179,6 +1194,8 @@
       email: email,
       paymentMethod: paymentMethod,
       technician: technician,
+      jobStartTime: jobStartTime,
+      jobEndTime: jobEndTime,
       region: region,
       notes: notes
     };
@@ -1196,7 +1213,7 @@
     saveLocal();
 
     // reset form
-    ['mileageStart','mileageEnd','providerCustom','firstName','lastName','phone','email','paymentMethodCustom','notes']
+    ['mileageStart','mileageEnd','providerCustom','firstName','lastName','phone','email','paymentMethodCustom','notes','jobStartTime','jobEndTime']
       .forEach(id => document.getElementById(id).value = '');
     document.getElementById('provider').value = '';
     document.getElementById('providerCustomWrap').classList.add('hidden');
@@ -1235,6 +1252,9 @@
     document.getElementById('callDate').value = entry.createdAt
       ? new Date(entry.createdAt).toISOString().slice(0, 10)
       : todayDateString();
+
+    document.getElementById('jobStartTime').value = entry.jobStartTime || '';
+    document.getElementById('jobEndTime').value = entry.jobEndTime || '';
 
     const regionSelect = document.getElementById('region');
     const knownRegions = Array.from(regionSelect.options).map(o => o.value).filter(v => v && v !== '__custom');
@@ -1379,7 +1399,7 @@
     editingId = null;
     document.getElementById('saveBtn').textContent = 'Save Ticket';
     document.getElementById('cancelEditBtn').classList.add('hidden');
-    ['mileageStart','mileageEnd','providerCustom','firstName','lastName','phone','email','paymentMethodCustom','notes']
+    ['mileageStart','mileageEnd','providerCustom','firstName','lastName','phone','email','paymentMethodCustom','notes','jobStartTime','jobEndTime']
       .forEach(id => document.getElementById(id).value = '');
     document.getElementById('provider').value = '';
     document.getElementById('providerCustomWrap').classList.add('hidden');
@@ -1512,10 +1532,11 @@
                 </div>`;
               }).join('')}
             </div>
-            ${(e.miles || e.paymentMethod || e.fuelCostEstimate != null || currentUser === 'Master') ? `
+            ${(e.miles || e.paymentMethod || e.fuelCostEstimate != null || e.jobStartTime || currentUser === 'Master') ? `
             <div class="ticket-meta">
               ${currentUser === 'Master' && e.technician ? `<span><span class="label">Logged by</span> ${escapeHtml(e.technician)}</span>` : ''}
               ${currentUser === 'Master' && e.region ? `<span><span class="label">Region</span> ${escapeHtml(e.region)}</span>` : ''}
+              ${(e.jobStartTime || e.jobEndTime) ? `<span><span class="label">Job time</span> ${escapeHtml(e.jobStartTime || '?')} – ${escapeHtml(e.jobEndTime || '?')}</span>` : ''}
               ${e.miles ? `<span><span class="label">Miles</span> ${e.miles}</span>` : ''}
               ${e.paymentMethod ? `<span><span class="label">Paid via</span> ${escapeHtml(e.paymentMethod)}</span>` : ''}
               ${e.fuelCostEstimate != null ? `<span><span class="label">Est. fuel</span> ${fmtMoney(e.fuelCostEstimate)}</span>` : ''}
@@ -1685,7 +1706,7 @@
       alert('No jobs logged yet — nothing to export.');
       return;
     }
-    const headers = ['Date','Technician','Region','Provider','Vehicle','Vehicle Name','Vehicle MPG','Gas Price Per Gallon','Fuel Gallons','Estimated Fuel Cost','Year','Make','Model','Service','Service Price','Call Total','Payment Method','Mileage Start','Mileage End','Miles Driven','Customer Name','Customer Phone','Customer Email','Notes'];
+    const headers = ['Date','Technician','Job Start Time','Job End Time','Region','Provider','Vehicle','Vehicle Name','Vehicle MPG','Gas Price Per Gallon','Fuel Gallons','Estimated Fuel Cost','Year','Make','Model','Service','Service Price','Call Total','Payment Method','Mileage Start','Mileage End','Miles Driven','Customer Name','Customer Phone','Customer Email','Notes'];
     const rows = [];
     visible.forEach(e => {
       (e.services || []).forEach(sv => {
@@ -1696,6 +1717,8 @@
         rows.push([
           fmtDate(e.createdAt),
           e.technician || '',
+          e.jobStartTime || '',
+          e.jobEndTime || '',
           e.region || '',
           e.provider,
           e.vehicle,
@@ -1762,7 +1785,7 @@
 
   function applyLogin(name){
     currentUser = name;
-    sessionStorage.setItem(SESSION_KEY, JSON.stringify({ name }));
+    localStorage.setItem(SESSION_KEY, JSON.stringify({ name }));
     document.getElementById('loginScreen').classList.add('hidden');
     document.getElementById('appWrapper').classList.remove('hidden');
     document.getElementById('loggedInAs').textContent = name;
@@ -1770,7 +1793,7 @@
   }
 
   function logout(){
-    sessionStorage.removeItem(SESSION_KEY);
+    localStorage.removeItem(SESSION_KEY);
     currentUser = null;
     document.getElementById('appWrapper').classList.add('hidden');
     document.getElementById('loginScreen').classList.remove('hidden');
@@ -1782,6 +1805,7 @@
     populateMakeOptions();
     resetCallDate();
     resetRegionField();
+    document.getElementById('jobTimeWrap').classList.toggle('hidden', currentUser !== 'Abel');
     loadLocal();          // instant — always works, even with zero signal
     updateHeaderCount();
     renderLog();
@@ -1798,7 +1822,7 @@
   // init — restore an existing session if there is one, otherwise show the login screen
   (function initSession(){
     try {
-      const saved = sessionStorage.getItem(SESSION_KEY);
+      const saved = localStorage.getItem(SESSION_KEY);
       if(saved){
         const { name } = JSON.parse(saved);
         if(name){ applyLogin(name); return; }
