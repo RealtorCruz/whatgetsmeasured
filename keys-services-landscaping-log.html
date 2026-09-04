@@ -1,0 +1,1905 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Keys Services</title>
+<style>
+  :root{
+    --green-900:#1c3007;
+    --green-700:#2e5708;
+    --green-600:#4a7a12;
+    --green-500:#7ab82e;
+    --green-100:#eef6e4;
+    --amber-500:#c9862f;
+    --amber-100:#faf1e2;
+    --red-600:#b3432f;
+    --red-100:#f7e6e2;
+    --ink-900:#1c1f1d;
+    --ink-600:#565f5a;
+    --ink-400:#8b938e;
+    --paper:#fbfaf7;
+    --card:#ffffff;
+    --line:#e2e2dc;
+    --radius:10px;
+    --font: -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    font-family:var(--font);
+    background:var(--paper);
+    color:var(--ink-900);
+    -webkit-font-smoothing:antialiased;
+    min-height:100vh;
+  }
+  input,select,textarea,button{font-family:inherit;font-size:16px;}
+  .hidden{display:none !important;}
+
+  /* ---------- Login ---------- */
+  #loginScreen{
+    min-height:100vh;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    padding:32px 24px;
+    background:linear-gradient(180deg,var(--green-900) 0%,var(--green-700) 55%,var(--green-600) 100%);
+  }
+  .logo-wrap{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    margin-bottom:36px;
+  }
+  .logo-mark{
+    width:64px;height:64px;
+    border-radius:16px;
+    background:var(--card);
+    display:flex;align-items:center;justify-content:center;
+    font-size:30px;
+    margin-bottom:14px;
+    box-shadow:0 8px 24px rgba(0,0,0,.18);
+  }
+  .brand-name{
+    color:#fff;
+    font-size:20px;
+    font-weight:600;
+    letter-spacing:.2px;
+  }
+  .brand-sub{
+    color:rgba(255,255,255,.72);
+    font-size:13px;
+    margin-top:4px;
+  }
+  .pin-box{
+    display:flex;
+    gap:10px;
+    margin:18px 0 10px;
+  }
+  .pinDigit{
+    width:48px;height:56px;
+    text-align:center;
+    border-radius:12px;
+    border:none;
+    font-size:24px;
+    background:rgba(255,255,255,.14);
+    color:#fff;
+    outline:none;
+    caret-color:#fff;
+  }
+  .pinDigit:focus{background:rgba(255,255,255,.24);}
+  #loginError{
+    color:#ffd7cd;
+    font-size:13px;
+    min-height:18px;
+    margin-top:6px;
+  }
+  .login-hint{
+    color:rgba(255,255,255,.55);
+    font-size:12px;
+    margin-top:28px;
+    text-align:center;
+    max-width:260px;
+  }
+
+  /* ---------- App shell ---------- */
+  #app{min-height:100vh;display:flex;flex-direction:column;}
+  header{
+    background:var(--green-900);
+    color:#fff;
+    padding:14px 16px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    position:sticky;top:0;z-index:20;
+  }
+  .header-brand{display:flex;align-items:center;gap:10px;}
+  .header-logo{
+    width:32px;height:32px;border-radius:8px;
+    background:#fff;display:flex;align-items:center;justify-content:center;
+    font-size:16px;flex:none;
+  }
+  .header-brand-text{font-size:15px;font-weight:600;}
+  .header-who{display:flex;align-items:center;gap:10px;font-size:12px;color:rgba(255,255,255,.75);}
+  .who-role-badge{
+    background:rgba(255,255,255,.14);
+    padding:3px 9px;border-radius:20px;
+    font-size:11px;font-weight:600;letter-spacing:.3px;
+    text-transform:uppercase;
+  }
+  .btn-logout{
+    background:transparent;border:1px solid rgba(255,255,255,.3);
+    color:#fff;padding:5px 10px;border-radius:8px;font-size:12px;cursor:pointer;
+  }
+
+  main{flex:1;padding:16px;max-width:640px;margin:0 auto;width:100%;}
+
+  nav.tabrow{
+    display:flex;
+    background:var(--green-900);
+    border-bottom:1px solid rgba(255,255,255,.12);
+    overflow-x:auto;
+  }
+  nav.tabrow button{
+    flex:1;
+    background:none;border:none;
+    padding:12px 8px;
+    color:rgba(255,255,255,.6);
+    font-size:13px;font-weight:600;
+    cursor:pointer;
+    border-bottom:3px solid transparent;
+    white-space:nowrap;
+  }
+  nav.tabrow button.active{
+    color:#fff;
+    border-bottom-color:var(--green-500);
+  }
+
+  /* ---------- Generic UI ---------- */
+  .card{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    padding:16px;
+    margin-bottom:12px;
+  }
+  .section-title{
+    font-size:13px;
+    font-weight:700;
+    color:var(--ink-600);
+    text-transform:uppercase;
+    letter-spacing:.4px;
+    margin:20px 0 8px;
+  }
+  .section-title:first-child{margin-top:0;}
+  label{
+    display:block;
+    font-size:12px;
+    font-weight:600;
+    color:var(--ink-600);
+    margin-bottom:5px;
+    margin-top:12px;
+  }
+  label:first-child{margin-top:0;}
+  input[type=text],input[type=number],input[type=date],input[type=time],
+  input[type=email],input[type=tel],select,textarea{
+    width:100%;
+    padding:10px 11px;
+    border:1px solid var(--line);
+    border-radius:8px;
+    background:#fff;
+    color:var(--ink-900);
+    outline:none;
+  }
+  input:focus,select:focus,textarea:focus{border-color:var(--green-500);}
+  textarea{resize:vertical;min-height:64px;}
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+  .row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;}
+
+  .btn{
+    display:inline-flex;align-items:center;justify-content:center;
+    padding:11px 16px;
+    border-radius:9px;
+    border:none;
+    font-size:14px;font-weight:600;
+    cursor:pointer;
+  }
+  .btn.primary{background:var(--green-600);color:#fff;}
+  .btn.primary:active{background:var(--green-700);}
+  .btn.secondary{background:var(--green-100);color:var(--green-700);}
+  .btn.danger{background:var(--red-100);color:var(--red-600);}
+  .btn.ghost{background:transparent;color:var(--ink-600);border:1px solid var(--line);}
+  .btn.small{padding:7px 11px;font-size:12.5px;}
+  .btn.full{width:100%;}
+  .btn:disabled{opacity:.45;cursor:not-allowed;}
+
+  .btn-row{display:flex;gap:8px;margin-top:16px;flex-wrap:wrap;}
+
+  .field-pending{
+    border-color:var(--amber-500) !important;
+    background:var(--amber-100) !important;
+  }
+  .field-note{
+    font-size:11px;color:var(--amber-500);margin-top:4px;font-weight:600;
+  }
+
+  .job-item{
+    display:flex;justify-content:space-between;align-items:flex-start;
+    padding:12px 0;border-bottom:1px solid var(--line);
+    gap:10px;cursor:pointer;
+  }
+  .job-item:last-child{border-bottom:none;}
+  .job-item.void{opacity:.5;}
+  .job-item-main{flex:1;min-width:0;}
+  .job-cust{font-weight:600;font-size:14.5px;}
+  .job-meta{font-size:12px;color:var(--ink-400);margin-top:2px;}
+  .job-amt{font-weight:700;font-size:14.5px;white-space:nowrap;}
+  .void-tag{
+    display:inline-block;font-size:10px;font-weight:700;color:var(--ink-400);
+    background:var(--line);padding:1px 7px;border-radius:10px;margin-left:6px;
+    letter-spacing:.3px;text-transform:uppercase;
+  }
+
+  .chip{
+    display:inline-flex;align-items:center;gap:5px;
+    background:var(--green-100);color:var(--green-700);
+    padding:4px 10px;border-radius:20px;font-size:12px;font-weight:600;
+    margin:0 6px 6px 0;
+  }
+  .chip button{
+    background:none;border:none;color:var(--green-700);cursor:pointer;
+    font-size:14px;line-height:1;padding:0;
+  }
+
+  .cust-card{
+    border:1px solid var(--line);border-radius:9px;padding:12px;margin-bottom:8px;
+    cursor:pointer;
+  }
+  .cust-card:active{background:var(--green-100);}
+  .cust-name{font-weight:600;font-size:14.5px;display:flex;align-items:center;gap:6px;}
+  .cust-sub{font-size:12px;color:var(--ink-400);margin-top:2px;}
+  .badge-repeat{
+    font-size:10px;font-weight:700;color:var(--green-700);background:var(--green-100);
+    padding:1px 7px;border-radius:10px;letter-spacing:.2px;
+  }
+
+  .addr-row{
+    display:flex;justify-content:space-between;align-items:center;
+    padding:10px;border:1px solid var(--line);border-radius:8px;margin-bottom:8px;
+  }
+  .addr-row.selected{border-color:var(--green-500);background:var(--green-100);}
+  .addr-text{font-size:13.5px;}
+  .addr-primary-tag{
+    font-size:10px;font-weight:700;color:var(--amber-500);margin-left:6px;
+  }
+
+  .modal-backdrop{
+    position:fixed;inset:0;background:rgba(20,25,20,.45);
+    display:flex;align-items:flex-end;justify-content:center;
+    z-index:50;
+  }
+  .modal-sheet{
+    background:#fff;width:100%;max-width:640px;
+    border-radius:16px 16px 0 0;
+    padding:20px 18px 24px;
+    max-height:88vh;overflow-y:auto;
+  }
+  .modal-title{font-size:16px;font-weight:700;margin-bottom:4px;}
+  .modal-sub{font-size:13px;color:var(--ink-600);margin-bottom:16px;}
+
+  .toast{
+    position:fixed;bottom:76px;left:50%;transform:translateX(-50%);
+    background:var(--ink-900);color:#fff;
+    padding:10px 18px;border-radius:24px;font-size:13px;
+    z-index:60;opacity:0;pointer-events:none;transition:opacity .2s ease, transform .2s ease;
+  }
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(-4px);}
+
+  .empty-state{
+    text-align:center;padding:40px 20px;color:var(--ink-400);
+  }
+  .empty-state .emoji{font-size:32px;margin-bottom:8px;}
+
+  .audit-entry{
+    font-size:12px;color:var(--ink-600);padding:6px 0;border-bottom:1px solid var(--line);
+  }
+  .audit-entry:last-child{border-bottom:none;}
+  .audit-who{font-weight:700;color:var(--ink-900);}
+
+  .locked-field{
+    padding:10px 12px;border-radius:8px;background:var(--green-100);
+    color:var(--ink-900);font-size:14px;font-weight:600;
+  }
+  .locked-note{
+    font-size:12.5px;color:var(--ink-600);background:var(--green-100);
+    border-radius:8px;padding:8px 10px;margin-bottom:10px;line-height:1.4;
+  }
+  .switch-row{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:10px 0;
+  }
+  .switch{
+    position:relative;width:42px;height:24px;border-radius:12px;background:var(--line);
+    cursor:pointer;flex:none;transition:background .15s ease;
+  }
+  .switch.on{background:var(--green-500);}
+  .switch .knob{
+    position:absolute;top:2px;left:2px;width:20px;height:20px;border-radius:50%;
+    background:#fff;transition:left .15s ease;box-shadow:0 1px 3px rgba(0,0,0,.25);
+  }
+  .switch.on .knob{left:20px;}
+</style>
+</head>
+<body>
+
+<!-- ===================== LOGIN ===================== -->
+<div id="loginScreen">
+  <div class="logo-wrap">
+    <div class="logo-mark" id="loginLogoMark"><img src="data:image/png;base64,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" alt="Keys Services" style="width:100%;height:100%;object-fit:contain;border-radius:16px;"></div>
+    <div class="brand-name" id="loginBrandName">Keys Services</div>
+    <div class="brand-sub">Enter your PIN to continue</div>
+  </div>
+  <div class="pin-box">
+    <input type="password" maxlength="1" inputmode="numeric" class="pinDigit" data-idx="0">
+    <input type="password" maxlength="1" inputmode="numeric" class="pinDigit" data-idx="1">
+    <input type="password" maxlength="1" inputmode="numeric" class="pinDigit" data-idx="2">
+    <input type="password" maxlength="1" inputmode="numeric" class="pinDigit" data-idx="3">
+  </div>
+  <div id="loginError"></div>
+  <div class="login-hint">Sessions stay signed in for 7 days. If you're heading somewhere without signal, log in before you go.</div>
+</div>
+
+<!-- ===================== APP ===================== -->
+<div id="app" class="hidden">
+  <header>
+    <div class="header-brand">
+      <div class="header-logo" id="headerLogoMark"><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAIAAAAlC+aJAAAVtElEQVR4nO1ad3hVVbZfe+9zzu33ppJCIiGQBJMQwIB0RUQcCzrUUYpdnzwQR0EEfTpiRRRBcZjBMhYQGERkpERQlCIYIIFQkkAI6SH11tx2ztnl/XEREaXom+/jzfe5/rnfuXffvddvrd8qe++DhBDwnyz4civwf5XfAVxu+R3A5ZbfAVxukS596DkVAyH071bmtwi6lEImhPi5upE/XnYYiHN+kSECEEYA4PP5MD5NOc653W4XQoAQcFkxXIRCQgghBFXpuHHjioqKCCERb1BKhw8fvmLFisjjJSC4oKcRgACAiCl+nTkuEsScc0LI4sWLN27cqOu60WBQFMVgMITD4VWrVn304UeEEM7YRXQHAQD4AoJ++ES/OqlciEIR7SsrK/v27SuE2LFjR3Z2tq7riqJ8X1h4w4gR8XFxBw4ejI+P55yfYde52guOMQEAl78JIwQgIib+qZ0FwVJY9xtlm8UQByAu3Q/npVDE5YyxJ554wuv1Llq0qHfv3pxzRVE459cMHTpr5qyXX3n5ueeeW7p06fn4EdGeMm3p5rtLqjeZjTJGjBBBCMgSIlhgBAiDhCR/2JMUc9WdQ1ZYDLG/Qv0LxwAhJBgMFhcXy7I0aOAgzrmqqpIkUV03mc1Dhg5B89H+/fsB4BfNzwUjWArrgQVrx+8/XuAwy1QPEswlCSRJSAQkApKEJIzdYZabduPEoR9bjZ04578qs52Xc5FINZvNc+bM1XX658f/DAAmk0mWZZPZHAyGZs+eLYSYO3cuAPych5wzgqWOkPuZj27ec7TAYrBTLnEucy4zKlMqUyoJoVAqeQPsurwZD97wpdXYiXP2a/PyhWIgkoIwIX+48catW7dOnjI5JztH13VZlouLi9euXTt58uTly5czxs7xAONMIpLT1/zUB6Mq6ouibQ4BOiGCECERgbEgWCgyEUJDGCYOWzws9xHOGQD8m4MYInGM8fGKiv79+3u93rN/Sk1N3b9vX3ynTkKIswEwTiUiN7ZXz/zbrXWtZQ6rA0CXJYQJJwQIEQQLWSKqHrRboh+5bUVe2s2M6YBQJJsiQGfKIxccAbowqosXskguKi4uHjNmjMvlVBRDKBTKy8tbvnx5RkbGOZRljEqSXNlYNuPNUW3eGpvFBkCJhAjhEgFCECFckUhHyJ+e1GP2hE9T43I1PaTIpnNXPSuQL9wrXLwXwhgLIfLz8+Pj4xsaGmRZCYVCOTk5GRkZuq5L0o8zUEZlST5cWfTwa7d1hNrsNkc4TGUZnbYsCAGAQGrxdQzueePs8Svs5jgAUGQTZXqzq8YfdmJE7JY4uznOIJs4YzWtJU5/bf+McUKI8/nhEpo5IRDGuq5TSs8YOxwOn2P7iPbfH9n54MtjNNphs9g1lckSERwEA4EEcES57vF1jLt26qOjlyDAAOD0tazZ/lZh2b9c/moOQQljk9Fot0TbTHYBWr3z5OOjVyOEOafni+2LA4g485wwRQhhjM/QL6L9tv1bH3xxAsLMaLB4/X7GNcAgySBJIMtAJDDIMGPs6xOHz6SMSgTtLfv2f965p81X57BKFrOBEFNYDVEW1PWQy9tIGWR16TUga8KZUvgbAVxUItpv/m7jA89PVHU/R8Jskrqlds/L6JORmtUpJsGoGLlQWzx11/YalZM2AAAkIn1TVHDX8zfLEjhsyOunAZU6rEpaYp7BgNu9JyQiVBq8feDTCCHGKMbn1fOSAYhzggmdrf1nX3864YkJBgP079n/tmFjBve+xmY1Njlrq06VVjWVhFQ/Bslssu04uKWs+miP1D490vKOnCwZmDvcZCQGI0mKTUyOT7WYrCebio5Ufy248AWC/XpcP7DHOM7ZBbS/JADoxw90GsrpthG44Iqs/P3TpTNemjbhxvH3jX4wMT66qGLb4rWP1DZXWM2OPlcO7NGll80US4TMOXN3uMprDn31/Ua3z9c9JXvcdRMVg8KF7vQ1VtQXHWv43hdos5pMnOtGY9TUUcvgErqiS42BM6qf9TUQQpasXPzld1999d522Rhe+dUbOw5+GW2Lu2XQpCcnvd0zvd/Wgm2lB8r/eP+kqDjr2XNW1JX/cdbQtz79a+dOGDDHBIwGsJmNJlNUR8CHsDTvvpXJsd0o08kFzQ8AwC8qjAkhqE7zeuURQqKjozDGkydP0qn27d4da7Z8uufol3e92L/7n+CuFwdu3L1C1dVICX/jjUWRJbqmp4XVsBBC01SdajrVhRDVp06OnN4vYSR0HyPnTTL3uduUNxllTYSbZnUpLNsqhIgME0JcWLtfE8QCAECSZM65rlGJyGYL7CtaOWvZ59flD1jy2Oo4e5e+Vw4QQmi6ihDetGkjxjgmJqa6qmbec/NmzJgRHx+PEEIIMcbSktLXv7Z9+ZfvfrlnXbOrBmGeGJt0Xf4tk26cFm2Lo0yXiOzxOwmWrCb76W0T+qUN8CU4gAkhdF3v1auXoigAMGTQNQcOHlj2xbwrJ8HQ6Y6Nez4u2LNh1MxrE26Er/dtEEIEQ0EhxO23344QslgsaWlpUx9+ePXq1UIISmlkWsqo+EE8frfL5zzzqFONUp0x+vw/plY1lnPBBRcRu/xcvUsFwBjLzc0FgKeffPZ47aF7XhnUdTzM/+S/i8r3TH/tgU4jUcqtUsZYc69JceW1h4QQzzz7TGxsjCzLAHDXlCm/SAbGmK5rkfkjv+pUP/NIGfUHfUIIxllIDc58846qxmNCCMbob6FQpAx/+P7HXfpZRs/tFW2PWvLYCreHTn5mbIurKSEuBmOOQfjDnoJdn68s/2zBwgWaquXl5fXu3fu5vzxHKRVCnN13AABCiBAJfujGEUIYIYSg2Vnf2FaT32OoxWQDAIwwY/RPN0xNS8pgkab11wUx54yxUCh0rPzYok9nJY2CmUvHNjbXrtm6GnpD19vsWeNisibYe06K6joGnlzywLCh1wOAzWazWq2dO3cuLi4WQmiadikLRajS0Fr92OIJoXBQCLH94L9Kq4vOuOjnnryEblRwgomqBx9fMn5L4ebXHl3WUKyXlZW+vmjB9AX3bti1NjEuRmAquJqUlNTXOnbBiwujoqN0TUcIBYPBmNiYQyWHkpOTNU2TZPl8ST3SL5xsLPMF3H0yBwNAR9AT1oKqHoq1JzJOW9z16Uk5FXWHg+FAn6xB/IdO7GKnEoITTPwh3+R5Q49UFb8/Z8OO1RUzHp3udLVZTNa3Z38wMG+QN+A2KorO1fTkrGOHKgGAMy5AcMGtVqvb5Z44caLT6VQUBQEwxiilEaL/BAAA5zwlvmt68pVtniZd18N6oM1fkxLfLRDyBcMd7o5WAPjn18uanfURwBenEGOUcxZSg7c/mXf7nJ5bt28c1H8oAGCMp0yZEvFki6vp2oczevxJyZ6IHntzwuABQ40mo9FotFgsZrPZbDFHEtfVV1+9atUqVVXFWcIY+5E8EW4wLrjYeWiTECIYCH6z7dsTNaVfH/zEG2g5H4XO6wEhhACBEH7o1RE2S9SaF/Y+PfPFPXt3xcXFcc4F5wBI07RO0YnvPb0+JipKZ0KRDX6/PzoqqkuXNE3TMMaMsvvuva97Rvd9+/bdeeed2dnZU6ZMWbBgwdYtW8PhcGSnAQAIoV0lBWVVBxBGgODqzBELF74+cNCgLVu2JMaltHr3bypcWN9WruoBb8ClU+2nJDmPRArh/7xz78Ov3SSEYIzn5ObIshwVFQUAkyZNihQHXdeEEPvLd/SYjGb+dezV+YMURR4wYEBsTIyiKBaL5UTFiVAoNG/evGHXDcvPz09KSoqsO3DgQJ/PxxkLhQPBUMDpa2FC9Xg8r8x/JTc3+567HtxTuHNv2aZHFvUd9qDphkfsL/9zpKqruw8XnOOBXwZAqS6EWLfjH39+c3zkD5qm9erVixASFf0TAJzzCIb1u5fNWXJXty6ZRCJ2u71fv342mw1h1K17+s6dO85mzt13352Xlzd16tTPPltLKT1Q8Z1Pbfd5O+a/Mj8nN+eOOyaWHDjS6C7bvO/dEY/DTY9Czii48VEYdn/86m8W6FT7bPs7HUFvpD7w89UBQkht88kTDWWLZqzxBZ02U/SP7v6FwZJO9dsHPWRTu78X2Gw2m1VVraury8zM9Hg8DTUt11xzbXp610emP3LzLbd8/PHHmzdvTkxMHDt23IEDxYSQBGv6q88vXr16VU5u9oqPVuZelVZWdfCpt+4/UnESUSk+TljNwtkIAbXtwy2z46OSuib1RAg4Z5FN5rlpVAiuM1Umxu0lBUN63lDTWmwyRKXGXUkpzc/PLy0ttdltHrcncqBCKSWERHiIMDpZefK64cPdLhfGmHEWCoUmTBh//fjMg9/Vrnxvs8/vio2JdbqcBoOBMnrnHXcGg8Hk5ORNmzf17tVr7pPP9O2f/eGWOXuKC49U7k1KkDpcrL4GfC4IeIQ1DrJyicctbvvDnWNHTGlpdw/ueYtJscI5aTTSMJ1s2u8Ltg/uOSIQdh44UZASm/VjzvrBP+c4gXOOES4oKPC43ZIkccEJIYpszMvPLHIuJTm7Zr18JwKpc2pyft+rVFW1WqwrVqxYt25dQ0PDhs83r1v3+SnY9tKH9y/7ZEnhvr2al+z8gh4qhKxciOsEV1+HWAhKi5iq4s27P9m+f+MNfe9QJOPpM+PTqgNinLb76hHCOg1VNu0xyIaNe9/uHNsTIczFOWcnTFXVs70WgbR69epAIMAFjzCNMb1oT9mVCSNb3bXVx5rnzp1z/70PxTmSu6ale73ePn36rFv32ap/riQx7u8Of7Fw2atv/m2lHpBECNOg6NYDOWKgpgY4glYn9B6MM7JRaz1rq5IKdm1ase0picgYYTizoaGcSkRudle5fU0pcTkbCxf1Tr+lpGLnmCGzq5qPdI7tLhNjBKiu6aNHj37qqaf4mRNpBAhQJEARQiAAIwyATCbj+vXru3V/bOgNtx1q8zbUNTc6jw+ZGPXuTVu3f/19enra4MFDjlTtufvZawgoVhO6ogtpb9F9raJHb2QwotYmAQyiYuDYERFoA4MBcq+C44ehoqb6VHN7m6eJYCnaFicJEAhQQ/txX7Alr+vwZV88esuA6T6/d/eRDXZT58pT+3WqpSf2VLUwQohRZooyvv3228nJyYwxhH68fUIIWSxWjBFCSNM0VVVtNpvFalr0+lsvJ/wl45ov66sLLdG0pPGYeb//8Smfc9C3Fa2tqClzNaOQN5ycJDSG3I2CqtDhgSaP8LqFrqOaUhGbhDQmDICczYAwD7swV62bdn9ybZ9bo21xGAESgl8R36Ouuezr4ndT4vILClczqmwpXGmUzcXHt/TpNnL7wY2+oAcjgjBinGdmZr366nxCCEYEY0IpBQQnTpwoKtqvKAZNUzt37jxq1KiOjg6JyLIBvfnaO6l8bAcqr2+sjDI59pSuX7NrbjCoLfjwyZcWvoxUTDhUlqPqctEtB/XohyvKBENgtoOnXcgyUAqKATnd4GqHzDzkOcVLSovvGDGta1IPIQQGAIQwxuTWgdMPVe5qbC07Wl5Re6qutOrA0ZPFCY6s9za8KmMp2hZHRRgjrGu62WLMzOhBuVrZtLumdb8sKwhQQcFmr9drMplUVZs2bdoXX3xx3333eb1es9na1Fq/bMHmkbnTOaIIaJTZtL5w/tHG9RkxI1qb1YTOPKyJxFRISEaN1VBXLmJiEQ1DhxNSuqHMfNTRLPxuIQEwFRpPQFIKJgbtg83PM0ERAgxCAEBdU5XT23rvzQu2H/y0svrY0eNltTX1TmfHnkO73D631eI4VltiMtiEEAajUnrk2KgxI+Z/fNe0+UPm/u36xWtm+EKe0qPlCEEgGEhJTbn7nrs1TXv//ffuuecet9sdHRO9c/fXJQWkT48B/lCAEGyU5eXbHn3wvtuyMzMP76VCJQSDZAAtJIhFIArpPVE4AJ4WUVEsNA6duyLGBTGI1lZmjUEFXxZ+/tWa47WHhAAMCITgDmv0u2sXVtfW9Mn8Q1FZUV11m6bS5hZn4YF9wUDgZMOROEeiy9fMOQ/61SdmPT7/7zP/+u4aVzNprOl4870lLyyd9s2324yKWQ/TF559KTYmVlEUAPTBBx+MGT3W7XLLivTWwneS6djEBAeHoNmEgiHnhqKnX3jsVYvZGtMJtbSQ9lMIOMIctdaLw99xow10hiQDGAxQXig8LRD0AmJQVcEtVnlI71ssRvvpQhbZhuq6Pu2Fifm9+i1+/0VdZVYH8vuYI6rTgPyr+l45PLNbVs2RllmPzZFtau7IgM1h+H4r0ylgjCQFJXTX6vaDpxZwFLy44Jkw87t97WEthLAI+oOHj5QYFVMwEM7OzDMntLX7Kg0G3WDU/VQfOeB6tfKGmbPmgA2AgNUOhAPCWDZggxlaazgmXACYraCGwGABEDjoFrn9MlctXZuRmss5R4wxhFBT26k9Jd+43K7l698NhFtONbYbTJjqIBuVlKTUgb1HTLhpcn7OAGe7641VM9Zu+IwQKhl56X4ADooDUq6wp12RlpqQmZGe4bBERTmirSa7UTFJBMuybDQZGaOARIffx1SMMOacM6EC0oK0YcTV49es/mrrpm2t/lPVVfVetTUU1KADwARAQDJDVDQSHCMszBZwO7kgxJ6Ept370OzJixHCEgIIhUP1zbU+X8d3e3f6O8Ktbi8GSQ1zXeP+jrDPezIrLU/XdZfbSWRcWHy48qgWkyhl52VN/a++vbL7dkvNsJjsqqq6fK0NzXWNrQ3FZYVt7lPegDOk+cJaQNXCQjAhgBDAGAghiqwoktGomC0mx8oNK69I6trn5iSbMdNArEwlXmeo3dVW31xXXV3T2NLg9Xh0wSQjBMNgNhGqEa4RsxIVuWKXBIDZZO5+RcbWnV9s273tVIsXBChGkAmYjIY4h91osVINbyjYdKT6JY/PldWt9/hFD1yZnkuQ3OxqOlZd+m3htupTJ1zeNk0PAwKDwWA2GowGg9FgiLEnGBRFkiSMMcEoUjcABIBgnDGuM65RppVVlej6XgFckonRYHLYHTHRnbJSEvoMGgaq7HGGm5pbT5yoOlFV0X4qADIzELAoUbIkM8YQY6y1vbWkrKS4pKim6WR6SnpSYnJCXFKnmE4xMbEOm8NqtoZV9UTtCSFYepduMfYYAGhubaluPBnWQ0bFYLPYbFaH1WQ1GkwSkU6riiKHDL/Y7P6CRNpjSnVNV4NqIBjuCKsBlYYE4rIsmxVHtKVTwB86dvzY8ZMVZceOds/oNvqmMVekdEGc80AwQKke5Yi+lJU4Z1wIiVz6kd6Froh+87siuq6HwiGb1faTwzrK6Ol5ASGEIk1OZJkzrU5kycgjnBl9zjYB/dJt/EVECPjp8fHpb06/RBG5qIrsigHBGQte0us2/5/lP/6Nrd8BXG75HcDllt8BXG75XxW5fJOBX4g5AAAAAElFTkSuQmCC" alt="Keys Services" style="width:100%;height:100%;object-fit:contain;border-radius:8px;"></div>
+      <div class="header-brand-text" id="headerBrandName">Keys Services</div>
+    </div>
+    <div class="header-who">
+      <span id="whoName"></span>
+      <span class="who-role-badge" id="whoRole"></span>
+      <button class="btn-logout" onclick="logout()">Log out</button>
+    </div>
+  </header>
+
+  <nav class="tabrow">
+    <button class="tab-btn active" data-view="log" onclick="goTo('log')">Log</button>
+    <button class="tab-btn" data-view="customers" onclick="goTo('customers')">Customers</button>
+    <button class="tab-btn" data-view="map" onclick="goTo('map')">Map</button>
+    <button class="tab-btn" data-view="team" onclick="goTo('team')" id="teamTabBtn">Team</button>
+  </nav>
+
+  <main>
+    <!-- ============ TODAY / LOG VIEW ============ -->
+    <div id="view-log">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+        <div style="font-size:19px;font-weight:700;">Job Log</div>
+        <button class="btn primary small" onclick="openTicketModal()">+ New Ticket</button>
+      </div>
+      <div class="card" id="logListWrap">
+        <div id="logList"></div>
+      </div>
+    </div>
+
+    <!-- ============ CUSTOMERS VIEW ============ -->
+    <div id="view-customers" class="hidden">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+        <div style="font-size:19px;font-weight:700;">Customers</div>
+        <button class="btn primary small" onclick="openCustomerModal()">+ Add Customer</button>
+      </div>
+      <input type="text" id="customerSearchInput" placeholder="Search by name, phone, or email" oninput="renderCustomers()" style="margin-bottom:14px;">
+      <div id="customerList"></div>
+    </div>
+
+    <!-- ============ MAP VIEW ============ -->
+    <div id="view-map" class="hidden">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+        <div style="font-size:19px;font-weight:700;">Customer Map</div>
+        <button class="btn ghost small" onclick="loadCustomerMap()">Refresh</button>
+      </div>
+      <div id="customerMapStatus" class="field-note" style="margin-bottom:8px;"></div>
+      <div id="customerMap" style="width:100%;height:420px;border-radius:10px;border:1px solid var(--line);background:var(--card);"></div>
+    </div>
+
+    <!-- ============ TEAM VIEW ============ -->
+    <div id="view-team" class="hidden">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+        <div style="font-size:19px;font-weight:700;">Team</div>
+        <button class="btn primary small" onclick="openTeamModal()">+ Add Person</button>
+      </div>
+      <div id="teamList"></div>
+      <div style="margin-top:24px;padding-top:16px;border-top:1px solid var(--line);">
+        <button class="btn ghost small" onclick="confirmResetLocalData()">Reset Local Data</button>
+        <div class="field-note" style="color:var(--ink-400);font-weight:400;margin-top:6px;">Wipes everything saved on this device and re-pulls fresh from the Sheet. Use this if you see duplicate or broken entries that aren't in the real Sheet.</div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<script>
+/* =========================================================================
+   LANDSCAPING LOG — V1 — PHASE 1 (front-end only, local-first)
+   -------------------------------------------------------------------------
+   Scope covered in this phase (per WGM Base Package spec, finalized 2026-09-02):
+     - PIN login, individual employee PINs (hashed), role tiers
+     - Job/ticket record: base fields, discount+reason, weather (manual/offline
+       fallback only — live weather API is a later phase)
+     - Customer + multi-address model, Primary Residence (enforced single),
+       Repeat Customer checkbox, notes, future reminder field (data only —
+       reminder *firing* logic is a later phase)
+     - Save / Edit (full audit trail) / Delete-or-Void ticket logic
+     - Session expiry: 7 days, anchored to midnight
+     - Local-first storage only (localStorage). No Sheets/Apps Script sync,
+       no entitlement check, no calendar/scheduler, no live weather/geocoding,
+       no reports dashboard, no crew management, no photos/checklist/bilingual
+       toggle in this phase — those are later phases per the discussed plan.
+   ========================================================================= */
+
+const STORAGE_KEY = 'wgm_keys_services_v1';
+
+// Live backend for this client. Never revert to a placeholder — this is
+// the actual deployed Apps Script URL for this build.
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyhtkPYSTyNRzGzQZmyGDoTP5T3ISnYmIBdRS1qO9SZ23UDLGBCMrDkUh7esDcvdqUJoQ/exec';
+
+const DEFAULT_ROLE_PINS = { owner:'1234', staff:'5678', supervisor:'9999' };
+
+// Service picker list — Owner can always type a custom name via "Other"
+// if a job needs something not on this starter list.
+const SERVICE_OPTIONS = [
+  'Grass Cutting','Edging','Trimming / Pruning','Mulch Delivery/Install',
+  'Leaf Removal','Weed Control','Fertilization','Power Washing',
+  'Paver Install/Repair','Sod Installation','Cleanup / Debris Haul','Other'
+];
+
+// Shared role display labels — used by both the Team modal and the Team list.
+const roleLabels = { staff:'Tech / Crew / Staff', supervisor:'Supervisor', owner:'Owner' };
+
+/* =========================================================================
+   GOOGLE MAPS / GEOCODING
+   -------------------------------------------------------------------------
+   WGM_MAPS_API_KEY is Abel's own pooled key (same one used for Chyne Tire's
+   Leads Map and the website) — used here for the presentation/demo phase
+   only. Per the standing model, this client-owned integration should swap
+   to Keys Services' OWN Google Cloud API key once they sign and onboard —
+   never leave WGM's key carrying a live paying client's real usage.
+   ========================================================================= */
+const WGM_MAPS_API_KEY = 'AIzaSyDS-7T4LNwKnaVUZrZOTerfkVNPdT2Nrug'; // TODO: swap to Keys Services' own key at onboarding
+
+let mapsScriptLoaded = false;
+let mapsScriptLoading = false;
+function ensureMapsLoaded(callback){
+  if(mapsScriptLoaded){ callback(); return; }
+  if(mapsScriptLoading){
+    const check = setInterval(()=>{
+      if(mapsScriptLoaded){ clearInterval(check); callback(); }
+    }, 200);
+    return;
+  }
+  mapsScriptLoading = true;
+  const script = document.createElement('script');
+  script.src = `https://maps.googleapis.com/maps/api/js?key=${WGM_MAPS_API_KEY}&libraries=places`;
+  script.async = true;
+  script.onload = () => { mapsScriptLoaded = true; mapsScriptLoading = false; callback(); };
+  script.onerror = () => { mapsScriptLoading = false; showToast('Could not load Google Maps.'); };
+  document.head.appendChild(script);
+}
+
+/* Address autocomplete — attach to any address <input> once it exists in
+   the DOM. Safe to call repeatedly (modals re-render often); does nothing
+   if the element is missing or already wired. */
+function wireAddressAutocomplete(inputId){
+  ensureMapsLoaded(()=>{
+    const el = document.getElementById(inputId);
+    if(!el || el.dataset.autocompleteWired) return;
+    el.dataset.autocompleteWired = '1';
+    new google.maps.places.Autocomplete(el, { types: ['address'] });
+  });
+}
+
+/* Pin-only customer/property map — base package standard. Geocodes each
+   address live by its text, one at a time with a 150ms stagger to respect
+   rate limits, rather than trusting stored lat/lng — the same pattern
+   already proven necessary on Chyne Tire's Leads Map, where Places
+   Autocomplete's geometry field came back unreliably. */
+async function loadCustomerMap(){
+  const statusEl = document.getElementById('customerMapStatus');
+  const mapDiv = document.getElementById('customerMap');
+  if(!mapDiv) return;
+
+  const addresses = [];
+  DB.customers.forEach(c => {
+    (c.addresses||[]).forEach(a => {
+      if(a.text) addresses.push({ text: a.text, customerName: (c.first+' '+c.last).trim(), label: a.label });
+    });
+  });
+
+  if(addresses.length === 0){
+    statusEl.textContent = 'No customer addresses yet — add an address to see it here.';
+    mapDiv.innerHTML = '';
+    return;
+  }
+
+  statusEl.textContent = `Geocoding ${addresses.length} address(es)...`;
+
+  ensureMapsLoaded(async ()=>{
+    const map = new google.maps.Map(mapDiv, {
+      zoom: 10,
+      center: { lat: 28.9469, lng: -81.2965 }, // Central FL default; auto-fits below once pins exist
+      styles: [{ stylers: [{ saturation: -20 }] }]
+    });
+    const geocoder = new google.maps.Geocoder();
+    const bounds = new google.maps.LatLngBounds();
+    let placed = 0, failed = 0;
+
+    for(let i=0; i<addresses.length; i++){
+      const addr = addresses[i];
+      await new Promise(resolve => {
+        setTimeout(()=>{
+          geocoder.geocode({ address: addr.text }, (results, status) => {
+            if(status === 'OK' && results[0]){
+              const position = results[0].geometry.location;
+              new google.maps.Marker({
+                position, map,
+                title: `${addr.customerName} — ${addr.label}`
+              });
+              bounds.extend(position);
+              placed++;
+            } else {
+              failed++;
+            }
+            resolve();
+          });
+        }, i * 150);
+      });
+    }
+
+    if(placed > 0) map.fitBounds(bounds);
+    statusEl.textContent = failed > 0
+      ? `${placed} address(es) mapped, ${failed} couldn't be geocoded (check for typos).`
+      : `${placed} address(es) mapped.`;
+  });
+}
+
+let DB = {
+  team: [],       // {id, name, pinHash, role, active, isSpouseSeat}
+  customers: [],  // {id, first, last, phone, email, notes, repeatCustomer, addresses:[{id,label,text,verified,primary,schedule}]}
+  tickets: [],    // {id, createdAt(ISO,fixed), jobDate, ...fields, customerId, addressId, voided, auditLog:[]}
+  session: null,  // {personId, loginAt}
+  syncMeta: {}    // { [recordId]: lastServerUpdatedAt } — what the backend last confirmed for each record.
+                  // Used as basedOnUpdatedAt on push, so the backend can detect if this device
+                  // is trying to overwrite a version it never actually saw.
+};
+
+let CURRENT_USER = null;
+
+/* ---------------- simple hash (client-side placeholder) ---------------- */
+function simpleHash(str){
+  let h = 0;
+  for(let i=0;i<str.length;i++){
+    h = (h<<5) - h + str.charCodeAt(i);
+    h |= 0;
+  }
+  return 'h' + Math.abs(h).toString(36);
+}
+
+/* ---------------- persistence ---------------- */
+function save(){
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(DB));
+}
+function load(){
+  const raw = localStorage.getItem(STORAGE_KEY);
+  if(raw){
+    try{ DB = JSON.parse(raw); }catch(e){ console.error('DB parse failed, starting fresh'); }
+  }
+  if(!DB.team || DB.team.length === 0){
+    seedTeam();
+  }
+  // Migration: tickets saved before per-service pricing existed stored
+  // services as plain strings. Convert those to {id,name,price:0} once so
+  // old tickets keep displaying correctly instead of breaking on render.
+  (DB.tickets || []).forEach(t => {
+    if(Array.isArray(t.services) && t.services.length && typeof t.services[0] === 'string'){
+      t.services = t.services.map(name => ({ id: uid(), name, price: 0 }));
+    }
+  });
+  // Migration: team members saved before Pay Type/Rate existed get a
+  // default (hourly, no rate set) so nothing breaks opening the Team modal.
+  (DB.team || []).forEach(p => {
+    if(p.payType === undefined) p.payType = 'hourly';
+    if(p.payRate === undefined) p.payRate = '';
+  });
+}
+function seedTeam(){
+  DB.team = [
+    { id: uid(), name:'Owner', pinHash: simpleHash(DEFAULT_ROLE_PINS.owner), role:'owner', active:true, isSpouseSeat:false, updatedAt: nowISO() },
+    { id: uid(), name:'Angel', pinHash: simpleHash(DEFAULT_ROLE_PINS.supervisor), role:'supervisor', active:true, isSpouseSeat:true, updatedAt: nowISO() }
+  ];
+  save();
+}
+function uid(){
+  return 'id' + Date.now().toString(36) + Math.random().toString(36).slice(2,7);
+}
+function nowISO(){ return new Date().toISOString(); }
+function todayStr(){
+  const d = new Date();
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+
+/* ---------------- toast ---------------- */
+function showToast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(showToast._t);
+  showToast._t = setTimeout(()=>t.classList.remove('show'), 2200);
+}
+
+/* =========================================================================
+   SYNC ENGINE (Phase 3)
+   -------------------------------------------------------------------------
+   Offline-first, enrichment-second: nothing here ever blocks a save. Every
+   push is fire-and-forget from the UI's perspective — the ticket/customer/
+   team save already happened locally and is already usable before any
+   network call starts. Sync failures are silent-but-logged-to-toast, never
+   a blocker.
+
+   Row-shape conversion is needed because the front-end nests addresses
+   inside customers, but the backend stores Addresses as its own flat tab
+   with a customerId foreign key. TICKET.services is an array client-side,
+   a pipe-delimited string server-side.
+   ========================================================================= */
+
+// Each service is {id, name, price}. Server-side row format is pipe-delimited
+// "Name::Price" pairs, e.g. "Grass Cutting::45|Edging::20". Old data saved
+// before pricing existed (plain "Name|Name") is parsed back in with price 0
+// so nothing already-saved breaks.
+function servicesToRow(servicesArr){
+  return (servicesArr || []).map(s => (s.name||'') + '::' + (s.price!==undefined && s.price!=='' ? s.price : 0)).join('|');
+}
+function servicesFromRow(servicesStr){
+  if(!servicesStr) return [];
+  return String(servicesStr).split('|').filter(Boolean).map(part => {
+    const idx = part.indexOf('::');
+    if(idx === -1) return { id: uid(), name: part, price: 0 }; // old plain-string row
+    return { id: uid(), name: part.slice(0, idx), price: parseFloat(part.slice(idx+2)) || 0 };
+  });
+}
+
+function ticketToRow(t){
+  return Object.assign({}, t, { services: servicesToRow(t.services) });
+}
+function ticketFromRow(row){
+  return Object.assign({}, row, {
+    services: servicesFromRow(row.services),
+    voided: row.voided === true || row.voided === 'TRUE' || row.voided === 'true'
+    // auditLog is deliberately NOT set here — it's merged separately from the
+    // AuditLog tab (mergeAuditLog_), so Object.assign in mergeById_ never
+    // overwrites a ticket's local audit history with an empty array.
+  });
+}
+
+function customerToRows(c){
+  const customerRow = {
+    id:c.id, first:c.first, last:c.last, phone:c.phone, email:c.email,
+    notes:c.notes, repeatCustomer:c.repeatCustomer, futureReminder:c.futureReminder,
+    updatedAt:c.updatedAt
+  };
+  const addressRows = (c.addresses||[]).map(a => Object.assign({}, a, { customerId: c.id }));
+  return { customerRow, addressRows };
+}
+
+/* ---------------- PUSH ---------------- */
+function pushRecord(tab, record){
+  if(!navigator.onLine){
+    return; // stays local only; will go out next time pushRecord fires after connectivity returns
+  }
+  const basedOnUpdatedAt = DB.syncMeta[record.id] || null;
+  fetch(APPS_SCRIPT_URL, {
+    method:'POST',
+    body: JSON.stringify({ action:'sync', items:[{ tab, record, basedOnUpdatedAt }] })
+  })
+  .then(r => r.json())
+  .then(resp => {
+    if(resp.status !== 'ok'){ showToast('Sync error — will retry later.'); return; }
+    const result = resp.results && resp.results[0];
+    if(!result) return;
+    if(result.status === 'conflict'){
+      showToast('⚠ This record changed elsewhere — flagged for owner review.');
+      // deliberately NOT updating syncMeta here — this device's version was
+      // not accepted, so it should keep trying to signal a conflict rather
+      // than quietly acting as if it synced.
+    } else if(result.status === 'created' || result.status === 'updated'){
+      DB.syncMeta[record.id] = record.updatedAt;
+      save();
+    }
+  })
+  .catch(() => {
+    // no connectivity or backend unreachable — stays queued for the next
+    // save/retry. Nothing blocks the user; this fails silently by design.
+  });
+}
+
+function pushTicket(t){
+  pushRecord('Tickets', ticketToRow(t));
+  // Audit entries are append-only and never edited after creation, so
+  // re-pushing an already-synced entry is harmless (upsert by id is
+  // idempotent) — simplest reliable way to guarantee nothing gets missed.
+  (t.auditLog || []).forEach(entry => pushRecord('AuditLog', entry));
+}
+function pushTeamMember(p){ pushRecord('Team', p); }
+function pushCustomer(c){
+  const { customerRow, addressRows } = customerToRows(c);
+  pushRecord('Customers', customerRow);
+  addressRows.forEach(a => pushRecord('Addresses', a));
+}
+
+/* ---------------- RESET LOCAL DATA ---------------- */
+// Wipes everything cached on THIS device and re-pulls fresh from the
+// backend. Unlike pullAndMerge (which only adds/updates, never deletes),
+// this treats the Sheet as the sole source of truth and discards any
+// local-only records the server doesn't have — including ghosts left
+// over from before a real backend existed, or from a sync that never
+// completed. Owner-only, since it's a destructive recovery action, not
+// a normal part of daily use.
+function confirmResetLocalData(){
+  if(CURRENT_USER.role !== 'owner'){ showToast('Only the Owner can reset local data.'); return; }
+  const warning = 'This will erase everything saved on THIS DEVICE and reload fresh from the real Sheet.\n\nAnything on this device that hasn\'t synced yet will be LOST, not recovered.\n\nContinue?';
+  if(!confirm(warning)) return;
+  resetLocalData();
+}
+
+function resetLocalData(){
+  localStorage.removeItem(STORAGE_KEY);
+  DB = { team: [], customers: [], tickets: [], session: null, syncMeta: {} };
+
+  if(!navigator.onLine){
+    showToast('Offline — can\'t reach the Sheet right now. Try again once you have a connection.');
+    // Restore whatever was there before, rather than leaving the app blank
+    // with no way to recover if there's no connection to re-pull from.
+    load();
+    renderLog(); renderCustomers(); renderTeam();
+    return;
+  }
+
+  fetch(APPS_SCRIPT_URL + '?action=pull')
+    .then(r => r.json())
+    .then(data => {
+      DB.team = data.Team || [];
+      DB.customers = (data.Customers || []).map(c => {
+        c.addresses = (data.Addresses || []).filter(a => a.customerId === c.id);
+        return c;
+      });
+      DB.tickets = (data.Tickets || []).map(ticketFromRow);
+      (DB.team || []).forEach(p => {
+        if(p.payType === undefined) p.payType = 'hourly';
+        if(p.payRate === undefined) p.payRate = '';
+      });
+      save();
+      renderLog(); renderCustomers(); renderTeam();
+      showToast('Local data reset — reloaded fresh from the Sheet.');
+    })
+    .catch(() => {
+      showToast('Could not reach the Sheet — local data was cleared but not reloaded. Reopen the app once you\'re back online.');
+    });
+}
+
+
+function pullAndMerge(){
+  if(!navigator.onLine) return;
+  fetch(APPS_SCRIPT_URL + '?action=pull')
+    .then(r => r.json())
+    .then(data => {
+      mergeTeam_(data.Team || []);
+      mergeCustomersAndAddresses_(data.Customers || [], data.Addresses || []);
+      mergeTickets_(data.Tickets || []);
+      mergeAuditLog_(data.AuditLog || []);
+      save();
+      renderLog(); renderCustomers(); renderTeam();
+    })
+    .catch(() => { /* offline or unreachable — local data stands as-is */ });
+}
+
+// Merge rule: last-write-wins by updatedAt, comparing the server's copy
+// against what THIS device already has locally. Local edits still pending
+// push are protected separately by basedOnUpdatedAt at push time — this
+// pull-side merge only decides whether to accept an incoming server
+// version into local state.
+function mergeById_(localArr, serverArr, rowToLocal){
+  serverArr.forEach(serverRow => {
+    const incoming = rowToLocal ? rowToLocal(serverRow) : serverRow;
+    const idx = localArr.findIndex(x => x.id === incoming.id);
+    if(idx === -1){
+      localArr.push(incoming);
+      DB.syncMeta[incoming.id] = incoming.updatedAt;
+    } else {
+      const localUpdatedAt = localArr[idx].updatedAt;
+      if(!localUpdatedAt || (incoming.updatedAt && incoming.updatedAt > localUpdatedAt)){
+        // preserve fields the server doesn't know about (e.g. auditLog stays local-only for now)
+        localArr[idx] = Object.assign({}, localArr[idx], incoming);
+        DB.syncMeta[incoming.id] = incoming.updatedAt;
+      }
+    }
+  });
+}
+
+function mergeTeam_(serverTeam){
+  mergeById_(DB.team, serverTeam, row => Object.assign({}, row, {
+    active: row.active === true || row.active === 'TRUE' || row.active === 'true',
+    isSpouseSeat: row.isSpouseSeat === true || row.isSpouseSeat === 'TRUE' || row.isSpouseSeat === 'true'
+  }));
+}
+
+function mergeTickets_(serverTickets){
+  mergeById_(DB.tickets, serverTickets, ticketFromRow);
+}
+
+// Audit entries are append-only and immutable once created, so this merge
+// is simple: for each ticket, add any AuditLog rows not already present
+// locally (deduped by entry id), then keep the combined log sorted
+// chronologically so edit history reads correctly regardless of which
+// device an edit happened on.
+function mergeAuditLog_(serverAuditRows){
+  serverAuditRows.forEach(row => {
+    const ticket = DB.tickets.find(t => t.id === row.ticketId);
+    if(!ticket) return; // ticket not synced yet — will attach on a later pull
+    ticket.auditLog = ticket.auditLog || [];
+    const exists = ticket.auditLog.some(a => a.id === row.id);
+    if(!exists){
+      ticket.auditLog.push(row);
+      ticket.auditLog.sort((a,b) => a.at.localeCompare(b.at));
+    }
+  });
+}
+
+function mergeCustomersAndAddresses_(serverCustomers, serverAddresses){
+  serverCustomers.forEach(row => {
+    const incoming = Object.assign({}, row, {
+      repeatCustomer: row.repeatCustomer === true || row.repeatCustomer === 'TRUE' || row.repeatCustomer === 'true',
+      addresses: []
+    });
+    const idx = DB.customers.findIndex(c => c.id === incoming.id);
+    if(idx === -1){
+      DB.customers.push(incoming);
+      DB.syncMeta[incoming.id] = incoming.updatedAt;
+    } else {
+      const localUpdatedAt = DB.customers[idx].updatedAt;
+      const existingAddresses = DB.customers[idx].addresses; // preserve during merge
+      if(!localUpdatedAt || (incoming.updatedAt && incoming.updatedAt > localUpdatedAt)){
+        DB.customers[idx] = Object.assign({}, DB.customers[idx], incoming, { addresses: existingAddresses });
+        DB.syncMeta[incoming.id] = incoming.updatedAt;
+      }
+    }
+  });
+
+  serverAddresses.forEach(row => {
+    const incoming = Object.assign({}, row, {
+      verified: row.verified === true || row.verified === 'TRUE' || row.verified === 'true',
+      primary: row.primary === true || row.primary === 'TRUE' || row.primary === 'true'
+    });
+    const customer = DB.customers.find(c => c.id === incoming.customerId);
+    if(!customer) return; // customer not synced yet — will attach on a later pull
+    const aIdx = customer.addresses.findIndex(a => a.id === incoming.id);
+    if(aIdx === -1){
+      customer.addresses.push(incoming);
+    } else {
+      const localUpdatedAt = customer.addresses[aIdx].updatedAt;
+      if(!localUpdatedAt || (incoming.updatedAt && incoming.updatedAt > localUpdatedAt)){
+        customer.addresses[aIdx] = incoming;
+      }
+    }
+    DB.syncMeta[incoming.id] = incoming.updatedAt;
+  });
+}
+
+/* =========================================================================
+   LOGIN / SESSION
+   Session rule: 7-day rolling session, expiry anchored to midnight (never
+   expires mid-shift). Requires signal to re-authenticate (PIN check is
+   local in this phase, but treated as if it were a live check for parity
+   with the eventual backend-verified version).
+   ========================================================================= */
+function restoreSession(){
+  if(DB.session){
+    const loginDate = new Date(DB.session.loginAt);
+    const expiryDate = new Date(loginDate);
+    expiryDate.setDate(expiryDate.getDate() + 7);
+    expiryDate.setHours(0,0,0,0); // anchor to midnight
+    if(new Date() < expiryDate){
+      const person = DB.team.find(p => p.id === DB.session.personId && p.active);
+      if(person){
+        CURRENT_USER = person;
+        showApp();
+        return;
+      }
+    }
+  }
+  showLogin();
+}
+
+const pinDigits = Array.from(document.querySelectorAll('.pinDigit'));
+let enteredPin = '';
+
+pinDigits.forEach((el, i) => {
+  el.addEventListener('input', () => {
+    el.value = el.value.replace(/[^0-9]/g,'').slice(0,1);
+    if(el.value && i < pinDigits.length-1){
+      pinDigits[i+1].focus();
+    }
+    checkPinComplete();
+  });
+  el.addEventListener('keydown', (e) => {
+    if(e.key === 'Backspace' && !el.value && i > 0){
+      pinDigits[i-1].focus();
+    }
+  });
+});
+
+function checkPinComplete(){
+  const pin = pinDigits.map(d => d.value).join('');
+  if(pin.length === 4){
+    attemptLogin(pin);
+  }
+}
+
+function attemptLogin(pin){
+  const hash = simpleHash(pin);
+  const person = DB.team.find(p => p.pinHash === hash && p.active);
+  const errEl = document.getElementById('loginError');
+  if(person){
+    CURRENT_USER = person;
+    DB.session = { personId: person.id, loginAt: nowISO() };
+    save();
+    errEl.textContent = '';
+    showApp();
+  } else {
+    errEl.textContent = 'Incorrect PIN. Try again.';
+    pinDigits.forEach(d => d.value = '');
+    pinDigits[0].focus();
+  }
+}
+
+function showLogin(){
+  document.getElementById('loginScreen').classList.remove('hidden');
+  document.getElementById('app').classList.add('hidden');
+  pinDigits.forEach(d => d.value = '');
+  pinDigits[0].focus();
+}
+
+function showApp(){
+  document.getElementById('loginScreen').classList.add('hidden');
+  document.getElementById('app').classList.remove('hidden');
+  document.getElementById('whoName').textContent = CURRENT_USER.name;
+  document.getElementById('whoRole').textContent = CURRENT_USER.role;
+  // Only Owner sees Team tab (per role-visibility pattern)
+  document.getElementById('teamTabBtn').style.display = (CURRENT_USER.role === 'owner') ? '' : 'none';
+  renderLog();
+  renderCustomers();
+  renderTeam();
+  pullAndMerge(); // non-blocking — app is already usable on local data before this resolves
+}
+
+function logout(){
+  DB.session = null;
+  CURRENT_USER = null;
+  save();
+  showLogin();
+}
+
+/* =========================================================================
+   NAVIGATION
+   ========================================================================= */
+function goTo(view){
+  ['log','customers','map','team'].forEach(v=>{
+    document.getElementById('view-'+v).classList.toggle('hidden', v!==view);
+  });
+  document.querySelectorAll('.tab-btn').forEach(b=>{
+    b.classList.toggle('active', b.dataset.view===view);
+  });
+  if(view === 'map') loadCustomerMap();
+}
+
+/* =========================================================================
+   TICKET (JOB) LOGIC
+   Rules locked tonight:
+     - True delete only same calendar day as createdAt (fixed timestamp,
+       never editable — NOT the editable jobDate field).
+     - Anything older becomes void: grayed out, visible, reversible via toggle.
+     - Edit: every field editable, every change logged (who / old / new).
+   ========================================================================= */
+
+let ticketDraft = null;
+let editingTicketId = null;
+
+function openTicketModal(existingId){
+  editingTicketId = existingId || null;
+  const existing = existingId ? DB.tickets.find(t=>t.id===existingId) : null;
+
+  ticketDraft = existing ? JSON.parse(JSON.stringify(existing)) : {
+    id: uid(),
+    createdAt: nowISO(),
+    jobDate: todayStr(),
+    startTime:'', stopTime:'',
+    mileageStart:'', mileageStop:'',
+    vehicleName:'', mpg:'', gasPrice:'',
+    paymentMethod:'Cash',
+    services: [],
+    discountAmount:'', discountReason:'',
+    weatherMode:'unset', weatherValue:'', // unset | manual | auto(later phase)
+    customerId:'', addressId:'',
+    voided:false,
+    auditLog:[],
+    updatedAt: nowISO()
+  };
+
+  renderTicketModal();
+}
+
+function renderTicketModal(){
+  const t = ticketDraft;
+  const isSameDayCreated = t.createdAt.slice(0,10) === nowISO().slice(0,10);
+  const canTrueDelete = editingTicketId && isSameDayCreated;
+
+  const custOptions = DB.customers.map(c =>
+    `<option value="${c.id}" ${t.customerId===c.id?'selected':''}>${escapeHtml(c.first+' '+c.last)}</option>`
+  ).join('');
+
+  const selectedCustomer = DB.customers.find(c=>c.id===t.customerId);
+  const addressOptions = selectedCustomer ? selectedCustomer.addresses.map(a=>
+    `<option value="${a.id}" ${t.addressId===a.id?'selected':''}>${escapeHtml(a.label)} — ${escapeHtml(a.text)}${a.primary?' (Primary Residence)':''}</option>`
+  ).join('') : '';
+
+  const servicesSubtotal = t.services.reduce((sum,s)=> sum + (parseFloat(s.price)||0), 0);
+  const serviceRowsHtml = t.services.map((s,i)=>`
+    <div class="addr-row">
+      <div class="addr-text">${escapeHtml(s.name)}</div>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <span style="font-weight:600;">$${(parseFloat(s.price)||0).toFixed(2)}</span>
+        <button class="btn ghost small" onclick="removeService(${i})">Remove</button>
+      </div>
+    </div>
+  `).join('');
+
+  const weatherFieldClass = (t.weatherMode==='manual') ? '' : 'field-pending';
+
+  const auditHtml = (t.auditLog && t.auditLog.length) ? `
+    <div class="section-title">Edit History</div>
+    <div class="card">${t.auditLog.map(a=>`
+      <div class="audit-entry">
+        <span class="audit-who">${escapeHtml(a.who)}</span> changed <strong>${escapeHtml(a.field)}</strong>
+        from "${escapeHtml(String(a.oldVal))}" to "${escapeHtml(String(a.newVal))}" — ${new Date(a.at).toLocaleString()}
+      </div>`).join('')}
+    </div>` : '';
+
+  const modalHtml = `
+    <div class="modal-title">${editingTicketId ? 'Edit Ticket' : 'New Ticket'}</div>
+    <div class="modal-sub">${editingTicketId ? 'All fields are editable. Changes are logged.' : 'Fill in what applies — services support multiple line items.'}</div>
+
+    <div class="section-title">Customer</div>
+    <label>Customer</label>
+    <select id="tf_customerId" onchange="handleCustomerSelectChange(this.value)">
+      <option value="">— Select a customer —</option>
+      ${custOptions}
+      <option value="__new__">+ Add New Customer</option>
+    </select>
+    ${selectedCustomer ? `
+      <label>Job Address</label>
+      <select id="tf_addressId" onchange="handleAddressSelectChange(this.value)">
+        <option value="">— Select address —</option>
+        ${addressOptions}
+        <option value="__new__">+ Add New Address</option>
+      </select>
+    ` : `<div class="field-note" style="margin-top:8px;">Add this customer first from the Customers tab, or pick an existing one above.</div>`}
+
+    <div class="section-title">Job Details</div>
+    <label>Job Date</label>
+    <input type="date" id="tf_jobDate" value="${t.jobDate}" onchange="ticketFieldChange('jobDate', this.value)">
+    <div class="row2">
+      <div><label>Start Time</label><input type="time" id="tf_startTime" value="${t.startTime}" onchange="ticketFieldChange('startTime', this.value)"></div>
+      <div><label>Stop Time</label><input type="time" id="tf_stopTime" value="${t.stopTime}" onchange="ticketFieldChange('stopTime', this.value)"></div>
+    </div>
+    <div class="row2">
+      <div><label>Mileage Start</label><input type="number" id="tf_mileageStart" value="${t.mileageStart}" oninput="updateTicketMiles()" onchange="ticketFieldChange('mileageStart', this.value)"></div>
+      <div><label>Mileage Stop</label><input type="number" id="tf_mileageStop" value="${t.mileageStop}" oninput="updateTicketMiles()" onchange="ticketFieldChange('mileageStop', this.value)"></div>
+    </div>
+    <div class="field-note hidden" id="tf_milesHint" style="color:var(--green-700);"></div>
+
+    <div class="section-title">Vehicle</div>
+    <label>Vehicle Name</label>
+    <input type="text" id="tf_vehicleName" value="${t.vehicleName}" placeholder="e.g. Truck 1" onchange="ticketFieldChange('vehicleName', this.value)">
+    <div class="row2">
+      <div><label>MPG</label><input type="number" id="tf_mpg" value="${t.mpg}" onchange="ticketFieldChange('mpg', this.value)"></div>
+      <div><label>Gas Price</label><input type="number" step="0.01" id="tf_gasPrice" value="${t.gasPrice}" onchange="ticketFieldChange('gasPrice', this.value)"></div>
+    </div>
+
+    <div class="section-title">Services</div>
+    ${serviceRowsHtml || '<div class="field-note">No services added yet.</div>'}
+    <label>Service</label>
+    <select id="newServiceSelect" onchange="handleServicePickChange()">
+      <option value="">— Select a service —</option>
+      ${SERVICE_OPTIONS.map(s=>`<option value="${s}">${s}</option>`).join('')}
+    </select>
+    <input type="text" id="newServiceCustom" placeholder="Service name" class="hidden" style="margin-top:8px;">
+    <div class="row2" style="margin-top:8px;">
+      <div><label>Price</label><input type="number" step="0.01" id="newServicePrice" placeholder="0.00"></div>
+      <div style="display:flex;align-items:flex-end;"><button class="btn secondary full" onclick="addService()">Add Service</button></div>
+    </div>
+    ${t.services.length ? `<div class="field-note" style="color:var(--ink-600);margin-top:10px;">Services Subtotal: $${servicesSubtotal.toFixed(2)}</div>` : ''}
+
+    <div class="section-title">Payment & Discount</div>
+    <label>Payment Method</label>
+    <select id="tf_paymentMethod" onchange="ticketFieldChange('paymentMethod', this.value)">
+      ${['Cash','Zelle','Cash App','Venmo','Card - Visa','Card - Mastercard','Card - Discover','Card - Amex']
+        .map(m=>`<option value="${m}" ${t.paymentMethod===m?'selected':''}>${m}</option>`).join('')}
+    </select>
+    <div class="row2">
+      <div><label>Discount Amount</label><input type="number" id="tf_discountAmount" value="${t.discountAmount}" onchange="ticketFieldChange('discountAmount', this.value)"></div>
+      <div>
+        <label>Discount Reason</label>
+        <select id="tf_discountReason" onchange="ticketFieldChange('discountReason', this.value)">
+          <option value="">— none —</option>
+          ${['Military','Student','Senior','Repeat Customer','Other']
+            .map(r=>`<option value="${r}" ${t.discountReason===r?'selected':''}>${r}</option>`).join('')}
+        </select>
+      </div>
+    </div>
+
+    <div class="section-title">Weather</div>
+    <label>Conditions</label>
+    <select id="tf_weatherValue" class="${weatherFieldClass}" onchange="ticketFieldChange('weatherValue', this.value); ticketFieldChange('weatherMode','manual')">
+      <option value="">— not set —</option>
+      ${['Sunny','Cloudy','Rain','Storms','Windy','Cold','Hot'].map(w=>`<option value="${w}" ${t.weatherValue===w?'selected':''}>${w}</option>`).join('')}
+    </select>
+    ${t.weatherMode!=='manual' ? `<div class="field-note">Live auto-capture isn't built yet in this phase — set manually for now.</div>` : ''}
+
+    ${auditHtml}
+
+    ${editingTicketId ? `
+      <div class="section-title">Receipt</div>
+      <div class="btn-row" style="margin-top:0;">
+        ${selectedCustomer && selectedCustomer.phone ? `<button class="btn secondary" onclick="sendReceipt('${t.id}','text')">Text Receipt</button>` : ''}
+        ${selectedCustomer && selectedCustomer.email ? `<button class="btn secondary" onclick="sendReceipt('${t.id}','email')">Email Receipt</button>` : ''}
+        ${selectedCustomer && !selectedCustomer.phone && !selectedCustomer.email ? `<div class="field-note">Add a phone or email to this customer to send a receipt.</div>` : ''}
+      </div>
+    ` : ''}
+
+    <div class="btn-row">
+      <button class="btn primary" onclick="saveTicket()">Save Ticket</button>
+      <button class="btn ghost" onclick="closeModal()">Cancel</button>
+      ${editingTicketId ? `
+        <button class="btn danger" onclick="deleteOrVoidTicket('${t.id}', ${canTrueDelete})">
+          ${canTrueDelete ? 'Delete Ticket' : 'Void Ticket'}
+        </button>` : ''}
+      ${editingTicketId && t.voided ? `
+        <button class="btn secondary" onclick="unvoidTicket('${t.id}')">Restore (Un-void)</button>` : ''}
+    </div>
+  `;
+
+  openModal(modalHtml);
+  updateTicketMiles();
+}
+
+/* Send Receipt — Phase 1: plain text via the device's native SMS/email app.
+   A polished branded PDF attachment is a later phase once a client's
+   branding is fully locked in (same two-phase pattern used elsewhere). */
+function buildReceiptText(t){
+  const cust = DB.customers.find(c=>c.id===t.customerId);
+  const addr = cust ? cust.addresses.find(a=>a.id===t.addressId) : null;
+  const servicesLines = (t.services||[]).map(s=>`  - ${s.name}: $${(parseFloat(s.price)||0).toFixed(2)}`).join('\n');
+  const subtotal = (t.services||[]).reduce((sum,s)=>sum+(parseFloat(s.price)||0),0);
+  const discount = parseFloat(t.discountAmount)||0;
+  const total = subtotal - Math.abs(discount);
+
+  let text = `Keys Services\n${t.jobDate}\n`;
+  if(addr) text += `${addr.text}\n`;
+  text += `\nServices:\n${servicesLines || '  (none listed)'}\n`;
+  if(discount) text += `Discount${t.discountReason?' ('+t.discountReason+')':''}: -$${Math.abs(discount).toFixed(2)}\n`;
+  text += `\nTotal: $${total.toFixed(2)}\nPaid via: ${t.paymentMethod}\n\nThank you for your business!`;
+  return text;
+}
+
+function sendReceipt(ticketId, method){
+  const t = DB.tickets.find(x=>x.id===ticketId);
+  if(!t){ showToast('Ticket not found.'); return; }
+  const cust = DB.customers.find(c=>c.id===t.customerId);
+  const receiptText = buildReceiptText(t);
+
+  if(method === 'text'){
+    if(!cust || !cust.phone){ showToast('No phone number on file for this customer.'); return; }
+    const phone = cust.phone.replace(/[^0-9+]/g,'');
+    window.location.href = `sms:${phone}?body=${encodeURIComponent(receiptText)}`;
+  } else {
+    if(!cust || !cust.email){ showToast('No email on file for this customer.'); return; }
+    const subject = encodeURIComponent('Your receipt from Keys Services — ' + t.jobDate);
+    window.location.href = `mailto:${cust.email}?subject=${subject}&body=${encodeURIComponent(receiptText)}`;
+  }
+}
+
+function updateTicketMiles(){
+  const hint = document.getElementById('tf_milesHint');
+  if(!hint) return;
+  const s = parseFloat(document.getElementById('tf_mileageStart').value);
+  const e = parseFloat(document.getElementById('tf_mileageStop').value);
+  if(!isNaN(s) && !isNaN(e) && e >= s){
+    hint.textContent = (e - s).toFixed(1) + ' miles driven';
+    hint.classList.remove('hidden');
+  } else {
+    hint.classList.add('hidden');
+  }
+}
+
+function handleCustomerSelectChange(value){
+  if(value === '__new__'){
+    openQuickAddCustomer();
+    return;
+  }
+  ticketFieldChange('customerId', value);
+  ticketFieldChange('addressId', ''); // reset address when customer changes
+  renderTicketModal();
+}
+
+/* Quick-add customer, launched from inside the ticket flow.
+   Saving returns straight to the ticket with the new customer + their
+   first address (if one was given) pre-selected — nothing already
+   filled in on the ticket is lost. */
+let quickAddReturnDraft = null;
+
+function openQuickAddCustomer(){
+  quickAddReturnDraft = ticketDraft; // preserve in-progress ticket
+  const modalHtml = `
+    <div class="modal-title">Add New Customer</div>
+    <div class="modal-sub">Just the basics — you can add more detail later from the Customers tab.</div>
+
+    <div class="row2">
+      <div><label>First Name</label><input type="text" id="qa_first"></div>
+      <div><label>Last Name</label><input type="text" id="qa_last"></div>
+    </div>
+    <div class="row2">
+      <div><label>Phone</label><input type="tel" id="qa_phone"></div>
+      <div><label>Email</label><input type="email" id="qa_email"></div>
+    </div>
+
+    <label>Job Address</label>
+    <input type="text" id="qa_address" placeholder="Full address for this job">
+
+    <div class="btn-row">
+      <button class="btn primary" onclick="saveQuickAddCustomer()">Save & Continue Ticket</button>
+      <button class="btn ghost" onclick="cancelQuickAddCustomer()">Cancel</button>
+    </div>
+  `;
+  openModal(modalHtml);
+  wireAddressAutocomplete('qa_address');
+}
+
+function saveQuickAddCustomer(){
+  const first = document.getElementById('qa_first').value.trim();
+  const last = document.getElementById('qa_last').value.trim();
+  const phone = document.getElementById('qa_phone').value.trim();
+  const email = document.getElementById('qa_email').value.trim();
+  const addressText = document.getElementById('qa_address').value.trim();
+
+  if(!first && !last){
+    showToast('Enter at least a name before saving.');
+    return;
+  }
+
+  const newCustomer = {
+    id: uid(), first, last, phone, email,
+    notes:'', repeatCustomer:false, futureReminder:'',
+    addresses: [],
+    updatedAt: nowISO()
+  };
+  let newAddressId = '';
+  if(addressText){
+    const addr = {
+      id: uid(), label:'Job Site', text: addressText,
+      verified: navigator.onLine, primary:true, schedule:null, updatedAt: nowISO()
+    };
+    newCustomer.addresses.push(addr);
+    newAddressId = addr.id;
+  }
+
+  DB.customers.push(newCustomer);
+  save();
+  renderCustomers();
+  pushCustomer(newCustomer); // non-blocking
+
+  // resume the ticket with this customer (and address, if given) selected
+  ticketDraft = quickAddReturnDraft;
+  ticketFieldChange('customerId', newCustomer.id);
+  if(newAddressId) ticketFieldChange('addressId', newAddressId);
+
+  showToast('Customer added.');
+  renderTicketModal();
+}
+
+function cancelQuickAddCustomer(){
+  ticketDraft = quickAddReturnDraft;
+  renderTicketModal();
+}
+
+function handleAddressSelectChange(value){
+  if(value === '__new__'){
+    openQuickAddAddress();
+    return;
+  }
+  ticketFieldChange('addressId', value);
+  renderTicketModal();
+}
+
+function openQuickAddAddress(){
+  quickAddReturnDraft = ticketDraft;
+  const modalHtml = `
+    <div class="modal-title">Add New Address</div>
+    <div class="modal-sub">Adds this address to the selected customer's record.</div>
+
+    <label>Label</label>
+    <input type="text" id="qa_addr_label" placeholder="Home, Work, Rental...">
+    <label>Full Address</label>
+    <input type="text" id="qa_addr_text" placeholder="Full address">
+
+    <div class="btn-row">
+      <button class="btn primary" onclick="saveQuickAddAddress()">Save & Continue Ticket</button>
+      <button class="btn ghost" onclick="cancelQuickAddCustomer()">Cancel</button>
+    </div>
+  `;
+  openModal(modalHtml);
+  wireAddressAutocomplete('qa_addr_text');
+}
+
+function saveQuickAddAddress(){
+  const label = document.getElementById('qa_addr_label').value.trim() || 'Address';
+  const text = document.getElementById('qa_addr_text').value.trim();
+  if(!text){ showToast('Enter an address.'); return; }
+
+  const customer = DB.customers.find(c=>c.id===quickAddReturnDraft.customerId);
+  if(!customer){ showToast('No customer selected on this ticket.'); return; }
+
+  const addr = {
+    id: uid(), label, text,
+    verified: navigator.onLine,
+    primary: customer.addresses.length === 0,
+    schedule: null,
+    updatedAt: nowISO()
+  };
+  customer.addresses.push(addr);
+  save();
+  renderCustomers();
+  customer.updatedAt = nowISO();
+  pushCustomer(customer); // non-blocking — pushes the customer + this new address row
+
+  ticketDraft = quickAddReturnDraft;
+  ticketFieldChange('addressId', addr.id);
+
+  showToast('Address added.');
+  renderTicketModal();
+}
+
+function ticketFieldChange(field, value){
+  const oldVal = ticketDraft[field];
+  ticketDraft[field] = value;
+  // audit only meaningful once a ticket actually exists (editing an existing one)
+  if(editingTicketId && String(oldVal) !== String(value)){
+    ticketDraft.auditLog = ticketDraft.auditLog || [];
+    ticketDraft.auditLog.push({
+      id: uid(),
+      ticketId: ticketDraft.id,
+      who: CURRENT_USER.name,
+      field: field,
+      oldVal: oldVal,
+      newVal: value,
+      at: nowISO()
+    });
+  }
+}
+
+function handleServicePickChange(){
+  const select = document.getElementById('newServiceSelect');
+  const customInput = document.getElementById('newServiceCustom');
+  customInput.classList.toggle('hidden', select.value !== 'Other');
+  if(select.value === 'Other') customInput.focus();
+}
+
+function addService(){
+  const select = document.getElementById('newServiceSelect');
+  const customInput = document.getElementById('newServiceCustom');
+  const priceInput = document.getElementById('newServicePrice');
+
+  const name = select.value === 'Other' ? customInput.value.trim() : select.value;
+  if(!name){ showToast('Select or enter a service name.'); return; }
+
+  const price = parseFloat(priceInput.value) || 0;
+  ticketDraft.services.push({ id: uid(), name, price });
+  renderTicketModal();
+}
+function removeService(i){
+  ticketDraft.services.splice(i,1);
+  renderTicketModal();
+}
+
+function saveTicket(){
+  if(!ticketDraft.customerId){
+    showToast('Select a customer before saving.');
+    return;
+  }
+  ticketDraft.updatedAt = nowISO();
+  const idx = DB.tickets.findIndex(t=>t.id===ticketDraft.id);
+  if(idx >= 0){
+    DB.tickets[idx] = ticketDraft;
+  } else {
+    DB.tickets.push(ticketDraft);
+  }
+  save();
+  closeModal();
+  renderLog();
+  showToast('Ticket saved.');
+  pushTicket(ticketDraft); // non-blocking — already saved locally above
+}
+
+function deleteOrVoidTicket(ticketId, isTrueDelete){
+  const t = DB.tickets.find(x=>x.id===ticketId);
+  if(!t) return;
+  if(isTrueDelete){
+    if(!confirm('This will permanently delete this ticket — this cannot be undone. Continue?')) return;
+    DB.tickets = DB.tickets.filter(x=>x.id!==ticketId);
+    showToast('Ticket permanently deleted.');
+  } else {
+    if(!confirm('This ticket will be marked void and grayed out — you can restore it later. Continue?')) return;
+    t.voided = true;
+    showToast('Ticket voided.');
+  }
+  save();
+  closeModal();
+  renderLog();
+}
+
+function unvoidTicket(ticketId){
+  const t = DB.tickets.find(x=>x.id===ticketId);
+  if(!t) return;
+  t.voided = false;
+  save();
+  closeModal();
+  renderLog();
+  showToast('Ticket restored.');
+}
+
+function renderLog(){
+  const wrap = document.getElementById('logList');
+  const sorted = [...DB.tickets].sort((a,b)=> b.createdAt.localeCompare(a.createdAt));
+  if(sorted.length === 0){
+    wrap.innerHTML = `<div class="empty-state"><div class="emoji">🧾</div>No tickets yet. Tap "+ New Ticket" to log your first job.</div>`;
+    return;
+  }
+  wrap.innerHTML = sorted.map(t=>{
+    const cust = DB.customers.find(c=>c.id===t.customerId);
+    const custName = cust ? (cust.first+' '+cust.last) : '(no customer)';
+    const total = ticketTotal(t);
+    return `
+      <div class="job-item ${t.voided?'void':''}" onclick="openTicketModal('${t.id}')">
+        <div class="job-item-main">
+          <div class="job-cust">${escapeHtml(custName)}${t.voided?'<span class="void-tag">Void</span>':''}</div>
+          <div class="job-meta">${escapeHtml(t.jobDate)} · ${escapeHtml(t.services.map(s=>s.name).join(', ') || 'No services listed')}</div>
+        </div>
+        <div class="job-amt">${total !== null ? '$'+total.toFixed(2) : '—'}</div>
+      </div>
+    `;
+  }).join('');
+}
+
+function ticketTotal(t){
+  const servicesSubtotal = (t.services || []).reduce((sum,s)=> sum + (parseFloat(s.price)||0), 0);
+  const discount = parseFloat(t.discountAmount) || 0;
+  if(servicesSubtotal === 0 && !discount) return null; // nothing entered yet
+  return servicesSubtotal - Math.abs(discount);
+}
+
+/* =========================================================================
+   CUSTOMER + ADDRESS MODEL
+   Rules locked tonight:
+     - One customer, many addresses.
+     - Exactly one address may be Primary Residence (enforced).
+     - Addresses are never truly deleted if referenced by a ticket — archive
+       only (Phase 1: we simply don't expose hard-delete on an address that
+       has ticket references; full archive UI can refine later).
+     - Repeat Customer is a manual checkbox, no auto-matching.
+   ========================================================================= */
+
+let customerDraft = null;
+let editingCustomerId = null;
+
+function openCustomerModal(existingId){
+  editingCustomerId = existingId || null;
+  const existing = existingId ? DB.customers.find(c=>c.id===existingId) : null;
+  customerDraft = existing ? JSON.parse(JSON.stringify(existing)) : {
+    id: uid(), first:'', last:'', phone:'', email:'',
+    notes:'', repeatCustomer:false, futureReminder:'',
+    addresses:[],
+    updatedAt: nowISO()
+  };
+  renderCustomerModal();
+}
+
+function renderCustomerModal(){
+  const c = customerDraft;
+  const addressesHtml = c.addresses.map((a,i)=>`
+    <div class="addr-row ${a.primary?'selected':''}">
+      <div>
+        <div class="addr-text">${escapeHtml(a.label)} — ${escapeHtml(a.text)}${a.primary?'<span class="addr-primary-tag">PRIMARY RESIDENCE</span>':''}</div>
+      </div>
+      <div style="display:flex;gap:6px;">
+        <button class="btn ghost small" onclick="setPrimaryAddress(${i})">${a.primary?'Primary':'Set Primary'}</button>
+        <button class="btn ghost small" onclick="removeAddress(${i})">Remove</button>
+      </div>
+    </div>
+  `).join('');
+
+  const modalHtml = `
+    <div class="modal-title">${editingCustomerId ? 'Edit Customer' : 'Add Customer'}</div>
+    <div class="modal-sub">Every customer is tracked, regardless of job type — this builds your own email/contact list over time.</div>
+
+    <div class="row2">
+      <div><label>First Name</label><input type="text" id="cf_first" value="${c.first}" oninput="customerFieldChange('first', this.value)"></div>
+      <div><label>Last Name</label><input type="text" id="cf_last" value="${c.last}" oninput="customerFieldChange('last', this.value)"></div>
+    </div>
+    <div class="row2">
+      <div><label>Phone</label><input type="tel" id="cf_phone" value="${c.phone}" oninput="customerFieldChange('phone', this.value)"></div>
+      <div><label>Email</label><input type="email" id="cf_email" value="${c.email}" oninput="customerFieldChange('email', this.value)"></div>
+    </div>
+
+    <div class="switch-row">
+      <div>
+        <div style="font-weight:600;font-size:13.5px;">Repeat Customer</div>
+        <div style="font-size:12px;color:var(--ink-400);">Check once you know they've used you before.</div>
+      </div>
+      <div class="switch ${c.repeatCustomer?'on':''}" onclick="toggleRepeatCustomer()"><div class="knob"></div></div>
+    </div>
+
+    <label>Notes</label>
+    <textarea id="cf_notes" placeholder="Cadence, preferences, anything worth remembering..." oninput="customerFieldChange('notes', this.value)">${escapeHtml(c.notes)}</textarea>
+
+    <label>Future Reminder</label>
+    <input type="text" id="cf_futureReminder" value="${c.futureReminder}" placeholder="e.g. Follow up in 3 months" oninput="customerFieldChange('futureReminder', this.value)">
+
+    <div class="section-title">Addresses</div>
+    ${addressesHtml || '<div class="field-note">No addresses yet — add one below.</div>'}
+    <div style="display:flex;gap:8px;margin-top:8px;">
+      <input type="text" id="newAddrLabel" placeholder="Label (Home, Work, Rental...)" style="flex:1;">
+    </div>
+    <div style="display:flex;gap:8px;margin-top:8px;">
+      <input type="text" id="newAddrText" placeholder="Full address" style="flex:1;">
+      <button class="btn secondary small" onclick="addAddress()">Add</button>
+    </div>
+    <div class="field-note" style="color:var(--ink-400);font-weight:400;">Address suggestions appear as you type. Offline entries still save as-typed.</div>
+
+    <div class="btn-row">
+      <button class="btn primary" onclick="saveCustomer()">Save Customer</button>
+      <button class="btn ghost" onclick="closeModal()">Cancel</button>
+    </div>
+  `;
+  openModal(modalHtml);
+  wireAddressAutocomplete('newAddrText');
+}
+
+function customerFieldChange(field, value){
+  // Keeps customerDraft current on every keystroke — without this, any
+  // action that re-renders the modal (adding an address, setting primary,
+  // toggling Repeat Customer) would wipe out whatever was typed here but
+  // not yet saved, since the re-render redraws these fields from
+  // customerDraft, not from the live DOM. This mirrors ticketFieldChange's
+  // already-working save-as-you-go pattern in the ticket modal.
+  customerDraft[field] = value;
+}
+
+function toggleRepeatCustomer(){
+  customerDraft.repeatCustomer = !customerDraft.repeatCustomer;
+  renderCustomerModal();
+}
+
+function addAddress(){
+  const label = document.getElementById('newAddrLabel').value.trim() || 'Address';
+  const text = document.getElementById('newAddrText').value.trim();
+  if(!text){ showToast('Enter an address first.'); return; }
+  customerDraft.addresses.push({
+    id: uid(), label, text,
+    verified: navigator.onLine, // Phase 1 stand-in for real validation
+    primary: customerDraft.addresses.length === 0, // first address defaults primary
+    schedule: null,
+    updatedAt: nowISO()
+  });
+  renderCustomerModal();
+}
+
+function removeAddress(i){
+  const addr = customerDraft.addresses[i];
+  const referenced = DB.tickets.some(t => t.addressId === addr.id);
+  if(referenced){
+    showToast("Can't remove — this address has ticket history. Archiving isn't built in this phase yet.");
+    return;
+  }
+  customerDraft.addresses.splice(i,1);
+  renderCustomerModal();
+}
+
+function setPrimaryAddress(i){
+  customerDraft.addresses.forEach((a,idx)=> a.primary = (idx===i));
+  renderCustomerModal();
+}
+
+function saveCustomer(){
+  customerDraft.first = document.getElementById('cf_first').value.trim();
+  customerDraft.last = document.getElementById('cf_last').value.trim();
+  customerDraft.phone = document.getElementById('cf_phone').value.trim();
+  customerDraft.email = document.getElementById('cf_email').value.trim();
+  customerDraft.notes = document.getElementById('cf_notes').value.trim();
+  customerDraft.futureReminder = document.getElementById('cf_futureReminder').value.trim();
+
+  if(!customerDraft.first && !customerDraft.last){
+    showToast('Enter at least a name before saving.');
+    return;
+  }
+
+  customerDraft.updatedAt = nowISO();
+  const idx = DB.customers.findIndex(c=>c.id===customerDraft.id);
+  if(idx >= 0){
+    DB.customers[idx] = customerDraft;
+  } else {
+    DB.customers.push(customerDraft);
+  }
+  save();
+  closeModal();
+  renderCustomers();
+  renderLog();
+  showToast('Customer saved.');
+  pushCustomer(customerDraft); // non-blocking — pushes both the customer row and any address rows
+}
+
+function renderCustomers(){
+  const wrap = document.getElementById('customerList');
+  const query = (document.getElementById('customerSearchInput')?.value || '').toLowerCase();
+  const filtered = DB.customers.filter(c=>{
+    const hay = (c.first+' '+c.last+' '+c.phone+' '+c.email).toLowerCase();
+    return hay.includes(query);
+  });
+  if(filtered.length === 0){
+    wrap.innerHTML = `<div class="empty-state"><div class="emoji">👤</div>No customers yet.</div>`;
+    return;
+  }
+  wrap.innerHTML = filtered.map(c=>{
+    const primaryAddr = c.addresses.find(a=>a.primary);
+    return `
+      <div class="cust-card" onclick="openCustomerModal('${c.id}')">
+        <div class="cust-name">${escapeHtml(c.first+' '+c.last)} ${c.repeatCustomer?'<span class="badge-repeat">Repeat</span>':''}</div>
+        <div class="cust-sub">${escapeHtml(c.phone || 'No phone')} ${c.email?(' · '+escapeHtml(c.email)):''}</div>
+        <div class="cust-sub">${primaryAddr ? escapeHtml(primaryAddr.text) : (c.addresses.length+' address(es)')}</div>
+      </div>
+    `;
+  }).join('');
+}
+
+/* =========================================================================
+   TEAM MODEL
+   Rules locked tonight:
+     - 1234 / 5678 / 9999 are default role templates, not real shared logins.
+     - Owner adds real people by name with their own unique 4-6 digit PIN.
+     - Spouse seat is Supervisor-tier, always, never counted toward any
+       entitlement bracket (Phase 1: no live entitlement check yet — this is
+       just the data model / flag, enforcement endpoint is a later phase).
+   ========================================================================= */
+
+let teamDraft = null;
+let editingTeamId = null;
+
+/* PERMISSION MODEL — corrected 2026-09-03 (comment below no longer matches
+   the confirmed standing rule; kept struck through for history):
+   ~~Supervisor-tier — including the complimentary spouse seat, which is
+   always Supervisor-tier — gets full access to every feature in the app
+   EXCEPT Team management (adding/editing people, PINs, roles). That's the
+   one default restriction between Owner and Supervisor.~~
+   CORRECTED RULE: Supervisor-tier cannot see the Team tab/field AT ALL by
+   default — not just blocked from editing, blocked from viewing the list
+   entirely (teamTabBtn is hidden outright for any non-owner in showApp()).
+   This matches what the code has actually always done; the struck-through text above described a broader default that was never
+   actually implemented. Supervisor visibility into Team can only be turned
+   on as a deliberate per-client customization if that client's discovery
+   conversation specifically calls for it — it is NOT the base-package
+   default. */
+function openTeamModal(existingId){
+  if(CURRENT_USER.role !== 'owner'){ showToast('Only the Owner can manage team members.'); return; }
+  editingTeamId = existingId || null;
+  const existing = existingId ? DB.team.find(p=>p.id===existingId) : null;
+  teamDraft = existing ? JSON.parse(JSON.stringify(existing)) : {
+    id: uid(), name:'', pin:'', role:'staff', active:true, isSpouseSeat:false,
+    payType:'hourly', payRate:'', updatedAt: nowISO()
+  };
+  renderTeamModal();
+}
+
+function renderTeamModal(){
+  const p = teamDraft;
+  const spouseLocked = p.isSpouseSeat === true;
+  const isNewRecord = !editingTeamId;
+  // Owner editing their OWN record can never change their own active
+  // status from the app — doing so would strip the only permission needed
+  // to open this modal at all, locking them out of their own team management.
+  const isSelf = editingTeamId && CURRENT_USER && editingTeamId === CURRENT_USER.id;
+  const selfOwnerLocked = isSelf && p.role === 'owner';
+
+// Shared role display labels — used by both the Team modal and the Team list.
+
+  const nameLocked = spouseLocked; // self-owner can still rename themselves
+  const activeLocked = spouseLocked || selfOwnerLocked;
+
+  const nameField = nameLocked
+    ? `<div class="locked-field">${escapeHtml(p.name)}</div>`
+    : `<input type="text" id="tm_name" value="${p.name}">`;
+
+  // ROLE IS ALWAYS LOCKED — never a client-facing dropdown, for anyone,
+  // new or existing. Role determines billing (Supervisor = $15/mo flat,
+  // Owner is singular) — letting an Owner self-promote a Staff seat to
+  // Supervisor would be the exact same self-service billing dodge already
+  // closed for the spouse seat. New team members are always added as
+  // Staff; upgrading someone to Supervisor or Owner is a WGM-only change
+  // made directly in the client's Sheet, same as the spouse-seat flag.
+  const roleField = `<div class="locked-field">${roleLabels[p.role] || p.role}</div>`;
+  const roleNote = isNewRecord
+    ? `<div class="locked-note">New team members are added as Staff. To set up a Supervisor seat or additional Owner access, contact WGM.</div>`
+    : `<div class="locked-note">Role can't be changed here. To upgrade or change this person's role, contact WGM.</div>`;
+
+  const activeField = activeLocked
+    ? `<div class="switch-row">
+        <div style="font-weight:600;font-size:13.5px;">Active</div>
+        <div class="switch ${p.active?'on':''}"><div class="knob"></div></div>
+      </div>`
+    : `<div class="switch-row">
+        <div style="font-weight:600;font-size:13.5px;">Active</div>
+        <div class="switch ${p.active?'on':''}" onclick="toggleActiveTeam()"><div class="knob"></div></div>
+      </div>`;
+
+  let lockedNote = '';
+  if(spouseLocked){
+    lockedNote = `<div class="locked-note">Spouse seat — name and active status are locked. Contact WGM to change these. PIN can still be updated below.</div>`;
+  } else if(selfOwnerLocked){
+    lockedNote = `<div class="locked-note">This is your own Owner account — active status can't be changed here, so you can't accidentally lock yourself out. Name and PIN can still be updated below.</div>`;
+  }
+
+  const modalHtml = `
+    <div class="modal-title">${editingTeamId ? 'Edit Team Member' : 'Add Team Member'}</div>
+    ${lockedNote}
+    <label>Name</label>
+    ${nameField}
+
+    <label>Role</label>
+    ${roleField}
+    ${roleNote}
+
+    <label>Pay Type</label>
+    <select id="tm_payType" onchange="teamDraft.payRate=document.getElementById('tm_payRate').value; teamDraft.payType=this.value; renderTeamModal();">
+      <option value="hourly" ${p.payType==='hourly'?'selected':''}>Hourly</option>
+      <option value="salary" ${p.payType==='salary'?'selected':''}>Salary</option>
+    </select>
+    <label>${p.payType==='salary' ? 'Salary Rate ($/pay period)' : 'Hourly Rate ($/hr)'}</label>
+    <input type="number" step="0.01" id="tm_payRate" value="${p.payRate||''}" placeholder="0.00">
+    <div class="field-note">Pay figures are visible only here, to the Owner — never to Supervisor or Staff logins, regardless of whose record this is.</div>
+
+    <label>PIN (4–6 digits, unique to this person)</label>
+    <input type="text" id="tm_pin" inputmode="numeric" placeholder="${editingTeamId ? 'Leave blank to keep current PIN' : ''}">
+
+    ${activeField}
+
+    <div class="btn-row">
+      <button class="btn primary" onclick="saveTeamMember()">Save</button>
+      <button class="btn ghost" onclick="closeModal()">Cancel</button>
+    </div>
+  `;
+  openModal(modalHtml);
+}
+
+function toggleActiveTeam(){
+  if(teamDraft.isSpouseSeat === true) return; // locked — spouse-seat active status isn't editable from the app
+  if(editingTeamId && CURRENT_USER && editingTeamId === CURRENT_USER.id && teamDraft.role === 'owner') return; // locked — can't deactivate your own Owner account
+  teamDraft.active = !teamDraft.active;
+  renderTeamModal();
+}
+
+function saveTeamMember(){
+  const spouseLocked = teamDraft.isSpouseSeat === true;
+
+  if(!spouseLocked){
+    teamDraft.name = document.getElementById('tm_name').value.trim();
+  }
+  // Role is never read from the modal — there's no input for it. It's set
+  // once (new records default to 'staff' in openTeamModal) and can only be
+  // changed by WGM directly in the client's Sheet, same as isSpouseSeat.
+  // Pay type/rate is never locked — unlike name/role/active, it should
+  // always be editable, including for a spouse seat or your own Owner
+  // record, since real payroll structure can apply to either.
+  teamDraft.payType = document.getElementById('tm_payType').value;
+  teamDraft.payRate = document.getElementById('tm_payRate').value.trim();
+
+  const pinInput = document.getElementById('tm_pin').value.trim();
+
+  if(!teamDraft.name){ showToast('Enter a name.'); return; }
+
+  if(pinInput){
+    if(!/^\d{4,6}$/.test(pinInput)){
+      showToast('PIN must be 4–6 digits.');
+      return;
+    }
+    const clash = DB.team.some(p => p.id !== teamDraft.id && p.pinHash === simpleHash(pinInput));
+    if(clash){
+      showToast('That PIN is already in use — each person needs a unique PIN.');
+      return;
+    }
+    teamDraft.pinHash = simpleHash(pinInput);
+  } else if(!teamDraft.pinHash){
+    showToast('Enter a PIN for this person.');
+    return;
+  }
+
+  teamDraft.updatedAt = nowISO();
+  const idx = DB.team.findIndex(p=>p.id===teamDraft.id);
+  if(idx >= 0){
+    DB.team[idx] = teamDraft;
+  } else {
+    DB.team.push(teamDraft);
+  }
+  save();
+  closeModal();
+  renderTeam();
+  showToast('Team member saved.');
+  pushTeamMember(teamDraft); // non-blocking
+}
+
+function renderTeam(){
+  const wrap = document.getElementById('teamList');
+  if(CURRENT_USER.role !== 'owner'){ wrap.innerHTML=''; return; }
+  if(DB.team.length === 0){
+    wrap.innerHTML = `<div class="empty-state"><div class="emoji">👥</div>No team members yet.</div>`;
+    return;
+  }
+  wrap.innerHTML = DB.team.map(p=>{
+    const payLabel = p.payRate
+      ? (p.payType === 'salary' ? `$${parseFloat(p.payRate).toFixed(2)}/period` : `$${parseFloat(p.payRate).toFixed(2)}/hr`)
+      : 'No pay rate set';
+    return `
+    <div class="cust-card" onclick="openTeamModal('${p.id}')">
+      <div class="cust-name">${escapeHtml(p.name) || '(no name)'} ${p.isSpouseSeat?'<span class="badge-repeat">Spouse Seat</span>':''}</div>
+      <div class="cust-sub">${roleLabels[p.role] || 'Unknown role'} ${p.active?'':'· Inactive'} · ${payLabel}</div>
+    </div>
+  `;}).join('');
+}
+
+/* =========================================================================
+   MODAL HELPER
+   ========================================================================= */
+function openModal(innerHtml){
+  closeModal();
+  const backdrop = document.createElement('div');
+  backdrop.className = 'modal-backdrop';
+  backdrop.id = 'activeModalBackdrop';
+  backdrop.innerHTML = `<div class="modal-sheet">${innerHtml}</div>`;
+  backdrop.addEventListener('click', (e)=>{ if(e.target === backdrop) closeModal(); });
+  document.body.appendChild(backdrop);
+}
+function closeModal(){
+  const el = document.getElementById('activeModalBackdrop');
+  if(el) el.remove();
+}
+
+function escapeHtml(str){
+  return String(str ?? '').replace(/[&<>"']/g, m => ({
+    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+  }[m]));
+}
+
+/* =========================================================================
+   INIT
+   ========================================================================= */
+load();
+restoreSession();
+</script>
+</body>
+</html>
