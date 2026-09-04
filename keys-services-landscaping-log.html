@@ -462,7 +462,7 @@ const DEFAULT_ROLE_PINS = { owner:'1234', staff:'5678', supervisor:'9999' };
 const SERVICE_OPTIONS = [
   'Grass Cutting','Edging','Trimming / Pruning','Mulch Delivery/Install',
   'Leaf Removal','Weed Control','Fertilization','Power Washing',
-  'Paver Install/Repair','Sod Installation','Cleanup / Debris Haul','Other'
+  'Paver Install/Repair','Sod Installation','Gutter Cleaning','Cleanup / Debris Haul','Other'
 ];
 
 // Shared role display labels — used by both the Team modal and the Team list.
@@ -984,6 +984,8 @@ function mondayOf(d){
   return m;
 }
 
+const MONTH_ABBR = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
 function planOccursOnDate(plan, dateObj){
   const WEEKDAY_ABBR = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
   const abbr = WEEKDAY_ABBR[dateObj.getDay()];
@@ -998,7 +1000,18 @@ function planOccursOnDate(plan, dateObj){
     return weeksDiff >= 0 && weeksDiff % 2 === 0;
   }
   if(plan.frequency === 'monthly'){
-    return dateObj.getDate() === start.getDate() && dateObj >= start;
+    // Explicit months chosen by the Owner — e.g. Jan/May/Sep — rather than
+    // inferred from whenever the plan happened to be created. Day of
+    // month is optional: if set, this is an exact scheduled date. If not
+    // set (the real date depends on weather/crew availability and can't
+    // be known in advance), it occurs once on the 1st of each selected
+    // month, purely as a reminder that the month is due — not a claim
+    // about the actual day it'll happen.
+    const monthAbbr = MONTH_ABBR[dateObj.getMonth()];
+    if(!(plan.months||[]).includes(monthAbbr)) return false;
+    return plan.dayOfMonth
+      ? dateObj.getDate() === parseInt(plan.dayOfMonth, 10)
+      : dateObj.getDate() === 1;
   }
   return false;
 }
@@ -1025,7 +1038,8 @@ function renderSchedule(){
               customerName: (c.first+' '+c.last).trim(),
               addressText: a.text,
               service: plan.service,
-              price: plan.price
+              price: plan.price,
+              approximate: plan.frequency === 'monthly' && !plan.dayOfMonth
             });
           }
         });
@@ -1039,7 +1053,7 @@ function renderSchedule(){
           <div class="job-item">
             <div class="job-item-main">
               <div class="job-cust">${escapeHtml(o.customerName)}</div>
-              <div class="job-meta">${escapeHtml(o.addressText)} · ${escapeHtml(o.service)}</div>
+              <div class="job-meta">${escapeHtml(o.addressText)} · ${escapeHtml(o.service)}${o.approximate ? ' · <span style="color:var(--amber-500);">due this month, exact day not set</span>' : ''}</div>
             </div>
             ${o.price ? `<div class="job-amt">$${parseFloat(o.price).toFixed(2)}</div>` : ''}
           </div>
@@ -1875,25 +1889,36 @@ function openCustomerModal(existingId){
 function renderCustomerModal(){
   const c = customerDraft;
   const DAYS = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+  const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
   const freqLabels = { weekly:'Weekly', biweekly:'Bi-weekly', monthly:'Monthly' };
 
   const addressesHtml = c.addresses.map((a,i)=>{
     const plans = a.schedule || [];
-    const draft = addressPlanDrafts[i] || { service:'', customService:'', frequency:'weekly', days:[], price:'' };
+    const draft = addressPlanDrafts[i] || { service:'', customService:'', frequency:'weekly', days:[], months:[], dayOfMonth:'', price:'' };
     const draftShowDays = draft.frequency === 'weekly' || draft.frequency === 'biweekly';
+    const draftShowMonths = draft.frequency === 'monthly';
 
-    const plansHtml = plans.map((p,pi)=>`
+    const plansHtml = plans.map((p,pi)=>{
+      const scheduleDetail = p.frequency === 'monthly'
+        ? `${(p.months||[]).join('/')}${p.dayOfMonth ? ', day '+p.dayOfMonth : ', exact day not set'}`
+        : (p.days && p.days.length ? p.days.join(', ') : '');
+      return `
       <div class="addr-row" style="padding:8px 10px;">
         <div class="addr-text">
-          <strong>${escapeHtml(p.service)}</strong> — ${freqLabels[p.frequency]||p.frequency}${p.days && p.days.length ? ' (' + p.days.join(', ') + ')' : ''}${p.price ? ' · $'+parseFloat(p.price).toFixed(2) : ''}
+          <strong>${escapeHtml(p.service)}</strong> — ${freqLabels[p.frequency]||p.frequency}${scheduleDetail ? ' (' + scheduleDetail + ')' : ''}${p.price ? ' · $'+parseFloat(p.price).toFixed(2) : ''}
         </div>
         <button class="btn ghost small" onclick="removeServicePlan(${i},${pi})">Remove</button>
       </div>
-    `).join('');
+    `;}).join('');
 
     const dayChips = DAYS.map(d => {
       const active = draft.days.includes(d);
       return `<button type="button" class="btn small ${active?'primary':'ghost'}" style="padding:6px 9px;font-size:11.5px;" onclick="toggleServicePlanDraftDay(${i},'${d}')">${d}</button>`;
+    }).join(' ');
+
+    const monthChips = MONTHS.map(m => {
+      const active = (draft.months||[]).includes(m);
+      return `<button type="button" class="btn small ${active?'primary':'ghost'}" style="padding:6px 9px;font-size:11.5px;" onclick="toggleServicePlanDraftMonth(${i},'${m}')">${m}</button>`;
     }).join(' ');
 
     return `
@@ -1917,10 +1942,15 @@ function renderCustomerModal(){
           ${SERVICE_OPTIONS.map(s=>`<option value="${s}" ${draft.service===s?'selected':''}>${s}</option>`).join('')}
         </select>
         ${draft.service==='Other' ? `<input type="text" placeholder="Service name" value="${draft.customService}" oninput="setServicePlanDraftField(${i},'customService', this.value)" style="margin-bottom:8px;">` : ''}
-        <select onchange="setServicePlanDraftField(${i},'frequency', this.value)" style="margin-bottom:${draftShowDays?'8px':'0'};">
+        <select onchange="setServicePlanDraftField(${i},'frequency', this.value)" style="margin-bottom:8px;">
           ${Object.keys(freqLabels).map(f=>`<option value="${f}" ${draft.frequency===f?'selected':''}>${freqLabels[f]}</option>`).join('')}
         </select>
         ${draftShowDays ? `<div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:8px;">${dayChips}</div>` : ''}
+        ${draftShowMonths ? `
+          <div class="field-note" style="color:var(--ink-600);">Which months?</div>
+          <div style="display:flex;gap:5px;flex-wrap:wrap;margin:6px 0 8px;">${monthChips}</div>
+          <input type="number" min="1" max="31" placeholder="Day of month (optional \u2014 leave blank if not fixed)" value="${draft.dayOfMonth}" oninput="setServicePlanDraftField(${i},'dayOfMonth', this.value)" style="margin-bottom:8px;">
+        ` : ''}
         <div style="display:flex;gap:8px;">
           <input type="number" step="0.01" placeholder="Price (optional)" value="${draft.price}" oninput="setServicePlanDraftField(${i},'price', this.value)" style="flex:1;">
           <button class="btn secondary small" onclick="addServicePlan(${i})">Add</button>
@@ -1959,13 +1989,18 @@ function renderCustomerModal(){
     <div class="section-title">Addresses</div>
     ${addressesHtml || '<div class="field-note">No addresses yet — add one below.</div>'}
     <div style="display:flex;gap:8px;margin-top:8px;">
-      <input type="text" id="newAddrLabel" placeholder="Label (Home, Work, Rental...)" style="flex:1;">
+      <select id="newAddrType" style="flex:1;">
+        <option value="sf">Single Family (SF)</option>
+        <option value="dup">Duplex (Dup) — 2 units</option>
+        <option value="tri">Triplex (Tri) — 3 units</option>
+        <option value="quad">Quadplex (Quad) — 4 units</option>
+      </select>
     </div>
     <div style="display:flex;gap:8px;margin-top:8px;">
       <input type="text" id="newAddrText" placeholder="Full address" style="flex:1;">
       <button class="btn secondary small" onclick="addAddress()">Add</button>
     </div>
-    <div class="field-note" style="color:var(--ink-400);font-weight:400;">Address suggestions appear as you type. Offline entries still save as-typed.</div>
+    <div class="field-note" style="color:var(--ink-400);font-weight:400;">Address suggestions appear as you type. Offline entries still save as-typed. Duplex/Triplex/Quadplex automatically add that many unit entries at this address.</div>
 
     <div class="btn-row">
       <button class="btn primary" onclick="saveCustomer()">Save Customer</button>
@@ -1991,17 +2026,33 @@ function toggleRepeatCustomer(){
   renderCustomerModal();
 }
 
+const PROPERTY_TYPE_UNIT_COUNTS = { sf:1, dup:2, tri:3, quad:4 };
+const UNIT_LETTERS = ['A','B','C','D'];
+
 function addAddress(){
-  const label = document.getElementById('newAddrLabel').value.trim() || 'Address';
+  const propertyType = document.getElementById('newAddrType').value;
   const text = document.getElementById('newAddrText').value.trim();
   if(!text){ showToast('Enter an address first.'); return; }
-  customerDraft.addresses.push({
-    id: uid(), label, text,
-    verified: navigator.onLine, // Phase 1 stand-in for real validation
-    primary: customerDraft.addresses.length === 0, // first address defaults primary
-    schedule: [],
-    updatedAt: nowISO()
-  });
+
+  const unitCount = PROPERTY_TYPE_UNIT_COUNTS[propertyType] || 1;
+  // Same physical street address, shared across every unit — units are
+  // otherwise fully independent addresses, each with their own recurring
+  // service plans, exactly like any other separate property. A shared
+  // propertyGroupId ties them together for anything that later needs to
+  // know they're the same building (nothing reads this yet).
+  const propertyGroupId = unitCount > 1 ? uid() : null;
+
+  for(let u=0; u<unitCount; u++){
+    const label = unitCount > 1 ? `Unit ${UNIT_LETTERS[u]}` : 'Address';
+    customerDraft.addresses.push({
+      id: uid(), label, text,
+      propertyGroupId,
+      verified: navigator.onLine, // Phase 1 stand-in for real validation
+      primary: customerDraft.addresses.length === 0, // first address defaults primary
+      schedule: [],
+      updatedAt: nowISO()
+    });
+  }
   renderCustomerModal();
 }
 
@@ -2010,22 +2061,31 @@ function addAddress(){
 // outside customerDraft since it's in-progress form state, not saved data.
 let addressPlanDrafts = {};
 
+function blankPlanDraft(){
+  return { service:'', customService:'', frequency:'weekly', days:[], months:[], dayOfMonth:'', price:'' };
+}
+
 function setServicePlanDraftField(addrIndex, field, value){
-  if(!addressPlanDrafts[addrIndex]){
-    addressPlanDrafts[addrIndex] = { service:'', customService:'', frequency:'weekly', days:[], price:'' };
-  }
+  if(!addressPlanDrafts[addrIndex]) addressPlanDrafts[addrIndex] = blankPlanDraft();
   addressPlanDrafts[addrIndex][field] = value;
   renderCustomerModal();
 }
 
 function toggleServicePlanDraftDay(addrIndex, day){
-  if(!addressPlanDrafts[addrIndex]){
-    addressPlanDrafts[addrIndex] = { service:'', customService:'', frequency:'weekly', days:[], price:'' };
-  }
+  if(!addressPlanDrafts[addrIndex]) addressPlanDrafts[addrIndex] = blankPlanDraft();
   const draft = addressPlanDrafts[addrIndex];
   const idx = draft.days.indexOf(day);
   if(idx === -1) draft.days.push(day);
   else draft.days.splice(idx,1);
+  renderCustomerModal();
+}
+
+function toggleServicePlanDraftMonth(addrIndex, month){
+  if(!addressPlanDrafts[addrIndex]) addressPlanDrafts[addrIndex] = blankPlanDraft();
+  const draft = addressPlanDrafts[addrIndex];
+  const idx = draft.months.indexOf(month);
+  if(idx === -1) draft.months.push(month);
+  else draft.months.splice(idx,1);
   renderCustomerModal();
 }
 
@@ -2038,6 +2098,13 @@ function addServicePlan(addrIndex){
     showToast('Pick at least one day for a weekly or bi-weekly plan.');
     return;
   }
+  if(draft.frequency === 'monthly'){
+    if(draft.months.length === 0){ showToast('Pick at least one month.'); return; }
+    if(draft.dayOfMonth){
+      const dom = parseInt(draft.dayOfMonth, 10);
+      if(!dom || dom < 1 || dom > 31){ showToast('Day of month must be between 1 and 31.'); return; }
+    }
+  }
 
   const addr = customerDraft.addresses[addrIndex];
   if(!Array.isArray(addr.schedule)) addr.schedule = [];
@@ -2046,11 +2113,13 @@ function addServicePlan(addrIndex){
     service: serviceName,
     frequency: draft.frequency,
     days: draft.days.slice(),
+    months: draft.months.slice(),
+    dayOfMonth: draft.dayOfMonth,
     price: draft.price,
-    startDate: todayStr() // anchors bi-weekly/monthly recurrence — see computeOccurrencesInRange
+    startDate: todayStr() // anchors bi-weekly recurrence only — see planOccursOnDate
   });
 
-  addressPlanDrafts[addrIndex] = { service:'', customService:'', frequency:'weekly', days:[], price:'' };
+  addressPlanDrafts[addrIndex] = blankPlanDraft();
   renderCustomerModal();
 }
 
@@ -2224,6 +2293,12 @@ function renderTeamModal(){
     ${roleField}
     ${roleNote}
 
+    ${p.role === 'owner' ? `
+      <label>Starting Address (for route planning)</label>
+      <input type="text" id="tm_startingAddress" value="${p.startingAddress||''}" placeholder="Shop or home base address">
+      <div class="field-note">Used as the starting point when sequencing a day's jobs into an efficient driving route.</div>
+    ` : ''}
+
     <label>Pay Type</label>
     <select id="tm_payType" onchange="teamDraft.payRate=document.getElementById('tm_payRate').value; teamDraft.payType=this.value; renderTeamModal();">
       <option value="hourly" ${p.payType==='hourly'?'selected':''}>Hourly</option>
@@ -2243,6 +2318,7 @@ function renderTeamModal(){
     </div>
   `;
   openModal(modalHtml);
+  if(p.role === 'owner') wireAddressAutocomplete('tm_startingAddress');
 }
 
 function toggleActiveTeam(){
@@ -2270,6 +2346,9 @@ function saveTeamMember(){
   // record, since real payroll structure can apply to either.
   teamDraft.payType = document.getElementById('tm_payType').value;
   teamDraft.payRate = document.getElementById('tm_payRate').value.trim();
+  if(teamDraft.role === 'owner'){
+    teamDraft.startingAddress = document.getElementById('tm_startingAddress').value.trim();
+  }
 
   const pinInput = document.getElementById('tm_pin').value.trim();
 
