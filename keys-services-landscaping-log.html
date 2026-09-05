@@ -1681,10 +1681,16 @@ function openQuickAddAddress(){
     <div class="modal-title">Add New Address</div>
     <div class="modal-sub">Adds this address to the selected customer's record.</div>
 
-    <label>Label</label>
-    <input type="text" id="qa_addr_label" placeholder="Home, Work, Rental...">
+    <label>Property Type</label>
+    <select id="qa_addr_type">
+      <option value="sf">Single Family (SF)</option>
+      <option value="dup">Duplex (Dup) — 2 units</option>
+      <option value="tri">Triplex (Tri) — 3 units</option>
+      <option value="quad">Quadplex (Quad) — 4 units</option>
+    </select>
     <label>Full Address</label>
     <input type="text" id="qa_addr_text" placeholder="Full address">
+    <div class="field-note" style="color:var(--ink-400);font-weight:400;">Duplex/Triplex/Quadplex automatically add that many unit entries at this address.</div>
 
     <div class="btn-row">
       <button class="btn primary" onclick="saveQuickAddAddress()">Save & Continue Ticket</button>
@@ -1696,30 +1702,39 @@ function openQuickAddAddress(){
 }
 
 function saveQuickAddAddress(){
-  const label = document.getElementById('qa_addr_label').value.trim() || 'Address';
+  const propertyType = document.getElementById('qa_addr_type').value;
   const text = document.getElementById('qa_addr_text').value.trim();
   if(!text){ showToast('Enter an address.'); return; }
 
   const customer = DB.customers.find(c=>c.id===quickAddReturnDraft.customerId);
   if(!customer){ showToast('No customer selected on this ticket.'); return; }
 
-  const addr = {
-    id: uid(), label, text,
-    verified: navigator.onLine,
-    primary: customer.addresses.length === 0,
-    schedule: [],
-    updatedAt: nowISO()
-  };
-  customer.addresses.push(addr);
+  const unitCount = PROPERTY_TYPE_UNIT_COUNTS[propertyType] || 1;
+  const propertyGroupId = unitCount > 1 ? uid() : null;
+  let firstNewAddr = null;
+
+  for(let u=0; u<unitCount; u++){
+    const label = unitCount > 1 ? `Unit ${UNIT_LETTERS[u]}` : 'Address';
+    const addr = {
+      id: uid(), label, text,
+      propertyGroupId,
+      verified: navigator.onLine,
+      primary: customer.addresses.length === 0,
+      schedule: [],
+      updatedAt: nowISO()
+    };
+    customer.addresses.push(addr);
+    if(!firstNewAddr) firstNewAddr = addr; // ticket gets pointed at the first unit — Owner can switch to a different unit afterward if needed
+  }
   save();
   renderCustomers();
   customer.updatedAt = nowISO();
-  pushCustomer(customer); // non-blocking — pushes the customer + this new address row
+  pushCustomer(customer); // non-blocking — pushes the customer + every new address row
 
   ticketDraft = quickAddReturnDraft;
-  ticketFieldChange('addressId', addr.id);
+  ticketFieldChange('addressId', firstNewAddr.id);
 
-  showToast('Address added.');
+  showToast(unitCount > 1 ? `${unitCount} units added — this ticket is set to Unit A.` : 'Address added.');
   renderTicketModal();
 }
 
@@ -2068,7 +2083,13 @@ function blankPlanDraft(){
 function setServicePlanDraftField(addrIndex, field, value){
   if(!addressPlanDrafts[addrIndex]) addressPlanDrafts[addrIndex] = blankPlanDraft();
   addressPlanDrafts[addrIndex][field] = value;
-  renderCustomerModal();
+  // Only 'service' and 'frequency' change what's actually shown on screen
+  // (custom-name input appearing, day/month pickers swapping) — those
+  // still need a re-render. Price, Day of Month, and the custom service
+  // name are plain typing with no layout to update, so re-rendering on
+  // every keystroke was pointless and was resetting scroll position back
+  // to the top of the modal with every character typed.
+  if(field === 'service' || field === 'frequency') renderCustomerModal();
 }
 
 function toggleServicePlanDraftDay(addrIndex, day){
