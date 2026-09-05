@@ -372,6 +372,7 @@
     <button class="tab-btn" data-view="customers" onclick="goTo('customers')">Customers</button>
     <button class="tab-btn" data-view="map" onclick="goTo('map')">Map</button>
     <button class="tab-btn" data-view="schedule" onclick="goTo('schedule')">Schedule</button>
+    <button class="tab-btn" data-view="summary" onclick="goTo('summary')">Summary</button>
     <button class="tab-btn" data-view="team" onclick="goTo('team')" id="teamTabBtn">Team</button>
   </nav>
 
@@ -411,6 +412,18 @@
     <div id="view-schedule" class="hidden">
       <div style="font-size:19px;font-weight:700;margin-bottom:14px;">Next 14 Days</div>
       <div id="scheduleList"></div>
+    </div>
+
+    <!-- ============ SUMMARY VIEW ============ -->
+    <div id="view-summary" class="hidden">
+      <div style="font-size:19px;font-weight:700;margin-bottom:14px;">Summary</div>
+      <div style="display:flex;gap:6px;margin-bottom:16px;flex-wrap:wrap;">
+        <button class="btn small" id="range-week" onclick="setSummaryRange('week')">This Week</button>
+        <button class="btn small" id="range-month" onclick="setSummaryRange('month')">This Month</button>
+        <button class="btn small" id="range-year" onclick="setSummaryRange('year')">This Year</button>
+        <button class="btn small" id="range-all" onclick="setSummaryRange('all')">All Time</button>
+      </div>
+      <div id="summaryContent"></div>
     </div>
 
     <!-- ============ TEAM VIEW ============ -->
@@ -1089,6 +1102,151 @@ function renderSchedule(){
 }
 
 /* =========================================================================
+   SUMMARY — job counts, revenue, cost/profit, fuel, and estimated
+   recurring revenue, over a selectable date range.
+   -------------------------------------------------------------------------
+   Built only from data this app actually collects. Two honest limits
+   worth being explicit about rather than glossing over:
+     - There's no Start/Complete/Skip workflow anywhere in this app, so
+       there's no real "skips" figure to report — voided tickets are
+       shown instead, as the closest thing that actually exists, not
+       relabeled to pretend it's the same thing.
+     - "Est. Monthly Recurring Revenue" is derived from each property's
+       recurring service plans (price × how often they occur), not from
+       actual confirmed monthly billing — it's a planning estimate, not
+       a guarantee, and is labeled as such.
+   ========================================================================= */
+let summaryRange = 'month';
+
+function setSummaryRange(range){
+  summaryRange = range;
+  renderSummary();
+}
+
+function ticketsInRange(range){
+  const today = new Date(); today.setHours(0,0,0,0);
+  let start;
+  if(range === 'week'){
+    start = mondayOf(today);
+  } else if(range === 'month'){
+    start = new Date(today.getFullYear(), today.getMonth(), 1);
+  } else if(range === 'year'){
+    start = new Date(today.getFullYear(), 0, 1);
+  } else {
+    start = null; // all time
+  }
+  return DB.tickets.filter(t => {
+    if(t.voided) return false;
+    if(!start) return true;
+    return strToLocalDate(t.jobDate) >= start;
+  });
+}
+
+function voidedTicketsInRange(range){
+  const today = new Date(); today.setHours(0,0,0,0);
+  let start;
+  if(range === 'week') start = mondayOf(today);
+  else if(range === 'month') start = new Date(today.getFullYear(), today.getMonth(), 1);
+  else if(range === 'year') start = new Date(today.getFullYear(), 0, 1);
+  else start = null;
+  return DB.tickets.filter(t => t.voided && (!start || strToLocalDate(t.jobDate) >= start));
+}
+
+// Rough annualized value of every recurring service plan across every
+// property, divided by 12 — an estimate for planning purposes, not a
+// confirmed monthly billing figure, since actual invoicing may combine
+// jobs differently (see the combined-receipt design elsewhere).
+function estimatedMonthlyRecurringRevenue(){
+  let annual = 0;
+  DB.customers.forEach(c => {
+    (c.addresses||[]).forEach(a => {
+      (a.schedule||[]).forEach(plan => {
+        const price = parseFloat(plan.price) || 0;
+        if(!price) return;
+        if(plan.frequency === 'weekly') annual += price * (plan.days||[]).length * 52;
+        else if(plan.frequency === 'biweekly') annual += price * (plan.days||[]).length * 26;
+        else if(plan.frequency === 'monthly') annual += price * (plan.months||[]).length;
+      });
+    });
+  });
+  return annual / 12;
+}
+
+function renderSummary(){
+  ['week','month','year','all'].forEach(r => {
+    document.getElementById('range-'+r).classList.toggle('primary', summaryRange===r);
+    document.getElementById('range-'+r).classList.toggle('ghost', summaryRange!==r);
+  });
+
+  const tickets = ticketsInRange(summaryRange);
+  const voidedCount = voidedTicketsInRange(summaryRange).length;
+  const isOwner = CURRENT_USER.role === 'owner';
+
+  let servicesSubtotal = 0, totalCost = 0, totalDiscount = 0;
+  let fuelCostTotal = 0, fuelCompleteCount = 0, fuelIncompleteCount = 0;
+
+  tickets.forEach(t => {
+    const subtotal = (t.services||[]).reduce((sum,s)=> sum + (parseFloat(s.price)||0), 0);
+    const cost = (t.services||[]).reduce((sum,s)=> sum + (parseFloat(s.cost)||0), 0);
+    servicesSubtotal += subtotal;
+    totalCost += cost;
+    totalDiscount += computeDiscountDollars(t, subtotal);
+
+    const miles = (parseFloat(t.mileageStop)||0) - (parseFloat(t.mileageStart)||0);
+    const mpg = parseFloat(t.mpg) || 0;
+    const gasPrice = parseFloat(t.gasPrice) || 0;
+    if(t.mileageStart !== '' && t.mileageStop !== '' && mpg > 0 && gasPrice > 0 && miles >= 0){
+      fuelCostTotal += (miles / mpg) * gasPrice;
+      fuelCompleteCount++;
+    } else {
+      fuelIncompleteCount++;
+    }
+  });
+
+  const netRevenue = servicesSubtotal - totalDiscount;
+  const avgJobValue = tickets.length ? netRevenue / tickets.length : 0;
+  const netAfterFuel = netRevenue - fuelCostTotal;
+  const profit = netRevenue - totalCost;
+  const estMRR = estimatedMonthlyRecurringRevenue();
+
+  document.getElementById('summaryContent').innerHTML = `
+    <div class="card">
+      <div class="field-note" style="color:var(--ink-600);font-weight:700;text-transform:uppercase;letter-spacing:.3px;">Job Activity</div>
+      <div style="font-size:22px;font-weight:700;margin:4px 0;">${tickets.length} job${tickets.length===1?'':'s'}</div>
+      <div class="field-note">${voidedCount} voided ticket${voidedCount===1?'':'s'} in this range</div>
+    </div>
+
+    <div class="card" style="margin-top:12px;">
+      <div class="field-note" style="color:var(--ink-600);font-weight:700;text-transform:uppercase;letter-spacing:.3px;">Revenue</div>
+      <div style="font-size:22px;font-weight:700;margin:4px 0;">$${netRevenue.toFixed(2)}</div>
+      <div class="field-note">Services Subtotal: $${servicesSubtotal.toFixed(2)} &nbsp;·&nbsp; Discounts Given: $${totalDiscount.toFixed(2)}</div>
+      <div class="field-note">Average Job Value: $${avgJobValue.toFixed(2)}</div>
+    </div>
+
+    ${isOwner ? `
+      <div class="card" style="margin-top:12px;">
+        <div class="field-note" style="color:var(--ink-600);font-weight:700;text-transform:uppercase;letter-spacing:.3px;">Cost &amp; Profit</div>
+        <div style="font-size:22px;font-weight:700;margin:4px 0;">$${profit.toFixed(2)} profit</div>
+        <div class="field-note">Total Cost: $${totalCost.toFixed(2)}</div>
+      </div>
+    ` : ''}
+
+    <div class="card" style="margin-top:12px;">
+      <div class="field-note" style="color:var(--ink-600);font-weight:700;text-transform:uppercase;letter-spacing:.3px;">Fuel</div>
+      <div style="font-size:22px;font-weight:700;margin:4px 0;">$${fuelCostTotal.toFixed(2)}</div>
+      <div class="field-note">Net After Fuel: $${netAfterFuel.toFixed(2)}</div>
+      ${fuelIncompleteCount > 0 ? `<div class="field-note" style="color:var(--amber-500);">${fuelIncompleteCount} job${fuelIncompleteCount===1?'':'s'} missing mileage/MPG/gas price — excluded from this total, not counted as $0.</div>` : ''}
+    </div>
+
+    <div class="card" style="margin-top:12px;">
+      <div class="field-note" style="color:var(--ink-600);font-weight:700;text-transform:uppercase;letter-spacing:.3px;">Recurring Services (Estimate)</div>
+      <div style="font-size:22px;font-weight:700;margin:4px 0;">$${estMRR.toFixed(2)}/mo</div>
+      <div class="field-note">Estimated from active recurring service plans across all properties — a planning figure, not confirmed monthly billing.</div>
+    </div>
+  `;
+}
+
+/* =========================================================================
    LOGIN / SESSION
    Session rule: 7-day rolling session, expiry anchored to midnight (never
    expires mid-shift). Requires signal to re-authenticate (PIN check is
@@ -1186,7 +1344,7 @@ function logout(){
    NAVIGATION
    ========================================================================= */
 function goTo(view){
-  ['log','customers','map','schedule','team'].forEach(v=>{
+  ['log','customers','map','schedule','summary','team'].forEach(v=>{
     document.getElementById('view-'+v).classList.toggle('hidden', v!==view);
   });
   document.querySelectorAll('.tab-btn').forEach(b=>{
@@ -1194,6 +1352,7 @@ function goTo(view){
   });
   if(view === 'map') loadCustomerMap();
   if(view === 'schedule') renderSchedule();
+  if(view === 'summary') renderSummary();
 }
 
 /* =========================================================================
