@@ -434,6 +434,15 @@
       </div>
       <div id="teamList"></div>
       <div style="margin-top:24px;padding-top:16px;border-top:1px solid var(--line);">
+        <div class="switch-row">
+          <div>
+            <div style="font-weight:600;font-size:13.5px;">Show Edit History on Tickets</div>
+            <div style="font-size:12px;color:var(--ink-400);">Only affects this device — it's still recorded underneath either way. A Supervisor on their own separate phone would need this turned off there too.</div>
+          </div>
+          <div class="switch" id="editHistorySwitch" onclick="toggleEditHistorySetting()"><div class="knob"></div></div>
+        </div>
+      </div>
+      <div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--line);">
         <button class="btn ghost small" onclick="confirmResetLocalData()">Reset Local Data</button>
         <div class="field-note" style="color:var(--ink-400);font-weight:400;margin-top:6px;">Wipes everything saved on this device and re-pulls fresh from the Sheet. Use this if you see duplicate or broken entries that aren't in the real Sheet.</div>
       </div>
@@ -490,6 +499,19 @@ const roleLabels = { staff:'Tech / Crew / Staff', supervisor:'Supervisor', owner
    to Keys Services' OWN Google Cloud API key once they sign and onboard —
    never leave WGM's key carrying a live paying client's real usage.
    ========================================================================= */
+/* =========================================================================
+   WGM FEATURE FLAGS — backend-only, never client-facing (standing pattern,
+   same as isSpouseSeat). These gate paid add-ons that are NOT part of the
+   base package per the client-facing feature spec. Only WGM edits these
+   values directly in the file before deploying — there is no in-app
+   toggle, and no client, including the Owner, can turn these on
+   themselves. Default false until actually sold as an add-on.
+   ========================================================================= */
+const FEATURE_FLAGS = {
+  payTracking: false,   // Employee Pay & Labor Cost tracking (Owner/Supervisor/Staff Pay Type + Rate)
+  costTracking: false   // Per-service Cost field + Cost/Profit rollups (tickets and Summary)
+};
+
 const WGM_MAPS_API_KEY = 'AIzaSyDS-7T4LNwKnaVUZrZOTerfkVNPdT2Nrug'; // TODO: swap to Keys Services' own key at onboarding
 
 let mapsScriptLoaded = false;
@@ -609,9 +631,10 @@ let DB = {
   customers: [],  // {id, first, last, phone, email, notes, repeatCustomer, addresses:[{id,label,text,verified,primary,schedule}]}
   tickets: [],    // {id, createdAt(ISO,fixed), jobDate, ...fields, customerId, addressId, voided, auditLog:[]}
   session: null,  // {personId, loginAt}
-  syncMeta: {}    // { [recordId]: lastServerUpdatedAt } — what the backend last confirmed for each record.
+  syncMeta: {},   // { [recordId]: lastServerUpdatedAt } — what the backend last confirmed for each record.
                   // Used as basedOnUpdatedAt on push, so the backend can detect if this device
                   // is trying to overwrite a version it never actually saw.
+  settings: { showEditHistory: true } // local-only, per-device — not synced to the Sheet (see note on the toggle itself)
 };
 
 let CURRENT_USER = null;
@@ -638,6 +661,8 @@ function load(){
   if(!DB.team || DB.team.length === 0){
     seedTeam();
   }
+  if(!DB.settings) DB.settings = { showEditHistory: true };
+  if(DB.settings.showEditHistory === undefined) DB.settings.showEditHistory = true;
   // Migration: tickets saved before per-service pricing existed stored
   // services as plain strings. Convert those to {id,name,price:0} once so
   // old tickets keep displaying correctly instead of breaking on render.
@@ -822,8 +847,9 @@ function confirmResetLocalData(){
 }
 
 function resetLocalData(){
+  const preservedSettings = DB.settings; // local-only preference, not sourced from the Sheet — a reset shouldn't wipe it
   localStorage.removeItem(STORAGE_KEY);
-  DB = { team: [], customers: [], tickets: [], session: null, syncMeta: {} };
+  DB = { team: [], customers: [], tickets: [], session: null, syncMeta: {}, settings: preservedSettings || { showEditHistory: true } };
 
   if(!navigator.onLine){
     showToast('Offline — can\'t reach the Sheet right now. Try again once you have a connection.');
@@ -1223,7 +1249,7 @@ function renderSummary(){
       <div class="field-note">Average Job Value: $${avgJobValue.toFixed(2)}</div>
     </div>
 
-    ${isOwner ? `
+    ${FEATURE_FLAGS.costTracking && isOwner ? `
       <div class="card" style="margin-top:12px;">
         <div class="field-note" style="color:var(--ink-600);font-weight:700;text-transform:uppercase;letter-spacing:.3px;">Cost &amp; Profit</div>
         <div style="font-size:22px;font-weight:700;margin:4px 0;">$${profit.toFixed(2)} profit</div>
@@ -1353,6 +1379,7 @@ function goTo(view){
   if(view === 'map') loadCustomerMap();
   if(view === 'schedule') renderSchedule();
   if(view === 'summary') renderSummary();
+  if(view === 'team') renderEditHistorySetting();
 }
 
 /* =========================================================================
@@ -1413,7 +1440,7 @@ function renderTicketModal(){
       <div class="addr-text">${escapeHtml(s.name)}</div>
       <div style="display:flex;align-items:center;gap:10px;">
         <span style="font-weight:600;">$${(parseFloat(s.price)||0).toFixed(2)}</span>
-        ${CURRENT_USER.role==='owner' ? `<span style="font-size:12px;color:var(--ink-400);">cost $${(parseFloat(s.cost)||0).toFixed(2)}</span>` : ''}
+        ${FEATURE_FLAGS.costTracking && CURRENT_USER.role==='owner' ? `<span style="font-size:12px;color:var(--ink-400);">cost $${(parseFloat(s.cost)||0).toFixed(2)}</span>` : ''}
         <button class="btn ghost small" onclick="editService(${i})">Edit</button>
         <button class="btn ghost small" onclick="removeService(${i})">Remove</button>
       </div>
@@ -1422,7 +1449,7 @@ function renderTicketModal(){
 
   const weatherFieldClass = (t.weatherMode==='manual' || t.weatherMode==='auto') ? '' : 'field-pending';
 
-  const auditHtml = (t.auditLog && t.auditLog.length) ? `
+  const auditHtml = (DB.settings.showEditHistory && t.auditLog && t.auditLog.length) ? `
     <div class="section-title">Edit History</div>
     <div class="card">${t.auditLog.map(a=>`
       <div class="audit-entry">
@@ -1489,11 +1516,11 @@ function renderTicketModal(){
       <div><label>Price</label><input type="number" step="0.01" id="newServicePrice" value="${pendingServiceEdit ? pendingServiceEdit.price : ''}" placeholder="0.00"></div>
     </div>
     <input type="text" id="newServiceCustom" placeholder="Service name" value="${pendingServiceEdit && !SERVICE_OPTIONS.includes(pendingServiceEdit.name) ? escapeHtml(pendingServiceEdit.name) : ''}" class="${pendingServiceEdit && !SERVICE_OPTIONS.includes(pendingServiceEdit.name) ? '' : 'hidden'}" style="margin-top:8px;">
-    <div class="${CURRENT_USER.role==='owner' ? 'row2' : ''}" style="margin-top:8px;">
-      ${CURRENT_USER.role==='owner' ? `<div><label>Cost</label><input type="number" step="0.01" id="newServiceCost" value="${pendingServiceEdit ? pendingServiceEdit.cost : ''}" placeholder="0.00"></div>` : ''}
+    <div class="${FEATURE_FLAGS.costTracking && CURRENT_USER.role==='owner' ? 'row2' : ''}" style="margin-top:8px;">
+      ${FEATURE_FLAGS.costTracking && CURRENT_USER.role==='owner' ? `<div><label>Cost</label><input type="number" step="0.01" id="newServiceCost" value="${pendingServiceEdit ? pendingServiceEdit.cost : ''}" placeholder="0.00"></div>` : ''}
       <div style="display:flex;align-items:flex-end;"><button class="btn secondary full" onclick="addService()">${pendingServiceEdit ? 'Update Service' : 'Add Service'}</button></div>
     </div>
-    ${t.services.length ? `<div class="field-note" style="color:var(--ink-600);margin-top:10px;">Services Subtotal: $${servicesSubtotal.toFixed(2)}${CURRENT_USER.role==='owner' ? ` &nbsp;·&nbsp; Cost: $${servicesCost.toFixed(2)} &nbsp;·&nbsp; Profit: $${(servicesSubtotal-servicesCost).toFixed(2)}` : ''}</div>` : ''}
+    ${t.services.length ? `<div class="field-note" style="color:var(--ink-600);margin-top:10px;">Services Subtotal: $${servicesSubtotal.toFixed(2)}${FEATURE_FLAGS.costTracking && CURRENT_USER.role==='owner' ? ` &nbsp;·&nbsp; Cost: $${servicesCost.toFixed(2)} &nbsp;·&nbsp; Profit: $${(servicesSubtotal-servicesCost).toFixed(2)}` : ''}</div>` : ''}
 
     <div class="section-title">Payment & Discount</div>
     <label>Payment Method</label>
@@ -2537,13 +2564,15 @@ function renderTeamModal(){
       <div class="field-note">Used as the starting point when sequencing a day's jobs into an efficient driving route.</div>
     ` : ''}
 
-    <label>Pay Type</label>
-    <select id="tm_payType" onchange="teamDraft.payRate=document.getElementById('tm_payRate').value; teamDraft.payType=this.value; renderTeamModal();">
-      <option value="hourly" ${p.payType==='hourly'?'selected':''}>Hourly</option>
-      <option value="salary" ${p.payType==='salary'?'selected':''}>Salary</option>
-    </select>
-    <label>${p.payType==='salary' ? 'Salary Rate ($/pay period)' : 'Hourly Rate ($/hr)'}</label>
-    <input type="number" step="0.01" id="tm_payRate" value="${p.payRate||''}" placeholder="0.00">
+    ${FEATURE_FLAGS.payTracking ? `
+      <label>Pay Type</label>
+      <select id="tm_payType" onchange="teamDraft.payRate=document.getElementById('tm_payRate').value; teamDraft.payType=this.value; renderTeamModal();">
+        <option value="hourly" ${p.payType==='hourly'?'selected':''}>Hourly</option>
+        <option value="salary" ${p.payType==='salary'?'selected':''}>Salary</option>
+      </select>
+      <label>${p.payType==='salary' ? 'Salary Rate ($/pay period)' : 'Hourly Rate ($/hr)'}</label>
+      <input type="number" step="0.01" id="tm_payRate" value="${p.payRate||''}" placeholder="0.00">
+    ` : ''}
 
     <label>PIN (4–6 digits, unique to this person)</label>
     <input type="text" id="tm_pin" inputmode="numeric" placeholder="${editingTeamId ? 'Leave blank to keep current PIN' : ''}">
@@ -2581,9 +2610,15 @@ function saveTeamMember(){
   // changed by WGM directly in the client's Sheet, same as isSpouseSeat.
   // Pay type/rate is never locked — unlike name/role/active, it should
   // always be editable, including for a spouse seat or your own Owner
-  // record, since real payroll structure can apply to either.
-  teamDraft.payType = document.getElementById('tm_payType').value;
-  teamDraft.payRate = document.getElementById('tm_payRate').value.trim();
+  // record, since real payroll structure can apply to either. Only read
+  // it when the flag is on and the fields actually exist in the DOM —
+  // otherwise leave teamDraft.payType/payRate exactly as they already
+  // were (defaults from openTeamModal, or whatever an existing record
+  // already had before this add-on was ever sold).
+  if(FEATURE_FLAGS.payTracking){
+    teamDraft.payType = document.getElementById('tm_payType').value;
+    teamDraft.payRate = document.getElementById('tm_payRate').value.trim();
+  }
   if(teamDraft.role === 'owner'){
     teamDraft.startingAddress = document.getElementById('tm_startingAddress').value.trim();
   }
@@ -2622,6 +2657,18 @@ function saveTeamMember(){
   pushTeamMember(teamDraft); // non-blocking
 }
 
+function toggleEditHistorySetting(){
+  if(CURRENT_USER.role !== 'owner') return; // defensive — this switch only exists in the Owner-only Team tab anyway
+  DB.settings.showEditHistory = !DB.settings.showEditHistory;
+  save();
+  renderEditHistorySetting();
+}
+
+function renderEditHistorySetting(){
+  const el = document.getElementById('editHistorySwitch');
+  if(el) el.classList.toggle('on', DB.settings.showEditHistory);
+}
+
 function renderTeam(){
   const wrap = document.getElementById('teamList');
   if(CURRENT_USER.role !== 'owner'){ wrap.innerHTML=''; return; }
@@ -2636,7 +2683,7 @@ function renderTeam(){
     return `
     <div class="cust-card" onclick="openTeamModal('${p.id}')">
       <div class="cust-name">${escapeHtml(p.name) || '(no name)'} ${p.isSpouseSeat?'<span class="badge-repeat">Spouse Seat</span>':''}</div>
-      <div class="cust-sub">${roleLabels[p.role] || 'Unknown role'} ${p.active?'':'· Inactive'} · ${payLabel}</div>
+      <div class="cust-sub">${roleLabels[p.role] || 'Unknown role'} ${p.active?'':'· Inactive'}${FEATURE_FLAGS.payTracking ? ' · ' + payLabel : ''}</div>
     </div>
   `;}).join('');
 }
