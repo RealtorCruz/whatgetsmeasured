@@ -460,15 +460,13 @@
         </div>
         <div class="field-note" style="color:var(--ink-400);font-weight:400;margin-top:6px;">A full, lossless copy of everything on this device — every customer, job, and team record. Restoring replaces what's currently on this device; it doesn't merge.</div>
       </div>
-      ${FEATURE_FLAGS.bulkImport ? `
-      <div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--line);">
+      <div id="bulkImportSection" style="margin-top:16px;padding-top:16px;border-top:1px solid var(--line);">
         <div style="font-size:15px;font-weight:700;margin-bottom:8px;">Bulk Customer Import</div>
         <button class="btn secondary small" onclick="document.getElementById('csvImportInput').click()">Import Customers CSV</button>
         <input type="file" id="csvImportInput" accept=".csv" class="hidden" onchange="handleCustomerCsvImport(this)">
         <div class="field-note" style="color:var(--ink-400);font-weight:400;margin-top:6px;">Expects columns: First Name, Last Name, Phone, Email, Address. Adds new customers — never overwrites or removes anything already here.</div>
         <div class="field-note" id="csvImportStatus"></div>
       </div>
-      ` : ''}
     </div>
 
     <!-- ============ TEAM VIEW ============ -->
@@ -488,8 +486,7 @@
         <div class="field-note" style="color:var(--ink-400);font-weight:400;margin-top:6px;">A job can be assigned to a whole crew instead of one person — useful when a team always shows up together.</div>
       </div>
 
-      ${FEATURE_FLAGS.assistantRoster ? `
-      <div style="margin-top:24px;padding-top:16px;border-top:1px solid var(--line);">
+      <div id="assistantRosterSection" style="margin-top:24px;padding-top:16px;border-top:1px solid var(--line);">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
           <div style="font-size:15px;font-weight:700;">Assistant Roster</div>
           <button class="btn secondary small" onclick="openAssistantModal()">+ Add Assistant</button>
@@ -497,7 +494,6 @@
         <div id="assistantList"></div>
         <div class="field-note" style="color:var(--ink-400);font-weight:400;margin-top:6px;">No login needed — just a name and a pay rate for tracking labor cost. Up to 5 per job.</div>
       </div>
-      ` : ''}
 
       <div style="margin-top:24px;padding-top:16px;border-top:1px solid var(--line);">
         <div style="font-size:15px;font-weight:700;margin-bottom:4px;">Show / Hide Tabs</div>
@@ -652,6 +648,13 @@ function applyTabVisibility(){
   document.getElementById('scheduleTabBtn').style.display = v.schedule ? '' : 'none';
   document.getElementById('summaryTabBtn').style.display = v.summary ? '' : 'none';
   document.getElementById('crewsSection').style.display = v.crews ? '' : 'none';
+  // Not an Owner-controlled toggle like the others above — this one is
+  // WGM-controlled via FEATURE_FLAGS, same as Pay/Cost tracking. Fixed
+  // here because this section lives in static page HTML, not inside a
+  // JS render function, so ${} template-literal syntax silently doesn't
+  // work here at all — it just prints as literal text on screen.
+  document.getElementById('assistantRosterSection').style.display = FEATURE_FLAGS.assistantRoster ? '' : 'none';
+  document.getElementById('bulkImportSection').style.display = FEATURE_FLAGS.bulkImport ? '' : 'none';
 
   const hiddenViews = { map: !v.map, schedule: !v.schedule, summary: !v.summary };
   const currentView = document.querySelector('.tab-btn.active');
