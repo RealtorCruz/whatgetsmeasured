@@ -542,7 +542,7 @@
         <div class="field-note" style="color:var(--ink-400);font-weight:400;margin-top:6px;">Wipes everything saved on this device and re-pulls fresh from the Sheet. Use this if you see duplicate or broken entries that aren't in the real Sheet.</div>
       </div>
       <div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--line);">
-        <div style="font-size:13px;font-weight:700;color:var(--ink-600);">License Cache (Phase 3 — not enforced yet)</div>
+        <div style="font-size:13px;font-weight:700;color:var(--ink-600);">License Cache (Phase 4 — Staff seat limit enforced)</div>
         <div id="licenseCacheDisplay" class="field-note"></div>
       </div>
     </div>
@@ -3877,6 +3877,29 @@ function toggleActiveTeam(){
 function saveTeamMember(){
   const spouseLocked = teamDraft.isSpouseSeat === true;
   if(teamDraft.role === 'owner') teamDraft.active = true; // hard rule — final enforcement point before persisting
+
+  // Phase 4 seat enforcement — checked here specifically because this is
+  // the one real point where a Staff seat actually goes active, whether
+  // that's a brand-new hire or reactivating someone previously inactive.
+  // A billed limit of null means "not yet configured on the Sheet" and
+  // must never be treated as zero or as unlimited-by-accident — it means
+  // don't enforce anything yet, exactly as Phase 3 established.
+  if(!spouseLocked && teamDraft.role === 'staff' && teamDraft.active === true){
+    const billedLimit = DB.license.billedTechStaffSeats;
+    if(billedLimit !== null){
+      const original = editingTeamId ? DB.team.find(p => p.id === editingTeamId) : null;
+      const wasAlreadyActive = original ? (original.active === true) : false;
+      if(!wasAlreadyActive){
+        const liveCount = DB.team.filter(p =>
+          p.role === 'staff' && p.active === true && !p.isSpouseSeat && p.id !== teamDraft.id
+        ).length;
+        if(liveCount >= billedLimit){
+          showToast(`You're at your billed limit of ${billedLimit} Staff seat${billedLimit===1?'':'s'}. Contact WGM to add more.`);
+          return;
+        }
+      }
+    }
+  }
 
   if(!spouseLocked){
     teamDraft.name = document.getElementById('tm_name').value.trim();
